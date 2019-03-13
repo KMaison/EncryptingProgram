@@ -36,7 +36,7 @@ namespace Client
 
             // Set filter for file extension and default file extension 
             dlg.DefaultExt = ".txt";
-            dlg.Filter = "mp3 Files (*.mp3)|*.mp3|png Files (*.png)|*.png|avi Files (*.avi)|*.avi|txt Files (*.txt)|*.txt";
+            dlg.Filter = "png Files (*.png)|*.png|mp3 Files (*.mp3)|*.mp3|avi Files (*.avi)|*.avi|txt Files (*.txt)|*.txt";
 
 
             // Display OpenFileDialog by calling ShowDialog method 
@@ -67,22 +67,9 @@ namespace Client
                 byte[] bytesToSend = ASCIIEncoding.ASCII.GetBytes(filenameTextBox.Text);
                 netstream.Write(bytesToSend, 0, bytesToSend.Length);
 
-                TcpListener Listener = null;
-                try
-                {
-                    Listener = new TcpListener(IPAddress.Loopback, 5000);
-                    Listener.Start();
-                }
-                catch (Exception ex)
-                {
-                    Console.WriteLine(ex.Message);
-                }
+                while (client.Available == 0) { }
 
-                while (true)
-                {
-                    if (Listener.Pending())
-                        break;
-                }
+                client.GetStream().Flush();
 
                 FileStream Fs = new FileStream(selectedFileTextBox.Text, FileMode.Open, FileAccess.Read);
                 int NoOfPackets = Convert.ToInt32
@@ -99,6 +86,7 @@ namespace Client
                     }
                     else
                         CurrentPacketLength = TotalLength;
+
                     SendingBuffer = new byte[CurrentPacketLength];
                     Fs.Read(SendingBuffer, 0, CurrentPacketLength);
                     netstream.Write(SendingBuffer, 0, (int)SendingBuffer.Length);
@@ -114,8 +102,8 @@ namespace Client
             }
             finally
             {
-                netstream.Close();
-                client.Close();
+                //netstream.Close();
+                //client.Close();
             }
         }
 

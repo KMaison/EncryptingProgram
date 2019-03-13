@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Net;
@@ -16,6 +17,9 @@ namespace Server
         static void Main(string[] args)
         {
             TcpListener Listener = null;
+
+            Thread.CurrentThread.CurrentCulture = CultureInfo.InvariantCulture;
+            Thread.CurrentThread.CurrentUICulture = CultureInfo.InvariantCulture;
             try
             {
                 Listener = new TcpListener(IPAddress.Loopback, 5000);
@@ -52,12 +56,11 @@ namespace Server
                         Console.WriteLine("File name: " + SaveFileName);
                         netstream.Write(ASCIIEncoding.ASCII.GetBytes("OK"), 0, ASCIIEncoding.ASCII.GetBytes("OK").Length);
                         int totalrecbytes = 0;
-                        while (true)
-                        {
-                            if (Listener.Pending())
-                                break;
-                        }
-                        FileStream Fs = new FileStream("D:\\Projekty\\Visual Studio C#\\BSK Proj\\ServerFiles\\" + SaveFileName, FileMode.OpenOrCreate, FileAccess.Write);
+
+                        while (client.Available == 0) { }
+
+
+                        FileStream Fs = new FileStream(".\\UploadedFiles\\" + SaveFileName, FileMode.OpenOrCreate, FileAccess.Write);
                         while ((RecBytes = netstream.Read(RecData, 0, RecData.Length)) > 0)
                         {
                             Fs.Write(RecData, 0, RecBytes);
