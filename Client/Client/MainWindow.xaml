@@ -5,8 +5,25 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:Client"
         mc:Ignorable="d"
-        Title="MainWindow" Height="450" Width="800">
+        Title="Encrypting program by KM&amp;KK company" Height="204.833" Width="393.5">
     <Grid>
-        
+        <Button x:Name="fileSelectButton" Content="Select file" HorizontalAlignment="Left" Margin="156,46,0,0" VerticalAlignment="Top" Width="76" Click="Button_Click"/>
+        <TextBox x:Name="selectedFileTextBox" HorizontalAlignment="Left" Height="24" Margin="0,7,0,0" TextWrapping="Wrap" VerticalAlignment="Top" Width="386"/>
+        <Button x:Name="sendButton" Content="Send" HorizontalAlignment="Left" Margin="286,137,0,0" VerticalAlignment="Top" Width="75" Click="Button_Click_1"/>
+        <RadioButton x:Name="ecbRadioButton" Content="ECB" HorizontalAlignment="Left" Margin="25,80,0,0" VerticalAlignment="Top" Checked="RadioButton_Checked"/>
+        <RadioButton x:Name="cbcRadioButton" Content="CBC" HorizontalAlignment="Left" Margin="25,100,0,0" VerticalAlignment="Top"/>
+        <RadioButton x:Name="cfbRadioButton" Content="CFB" HorizontalAlignment="Left" Margin="25,120,0,0" VerticalAlignment="Top"/>
+        <RadioButton x:Name="ofbRadioButton" Content="OFB" HorizontalAlignment="Left" Margin="25,140,0,0" VerticalAlignment="Top"/>
+        <Label Content="Encryption type:" HorizontalAlignment="Left" Margin="11,48,0,0" VerticalAlignment="Top" RenderTransformOrigin="0.462,0.577">
+            <Label.RenderTransform>
+                <TransformGroup>
+                    <ScaleTransform/>
+                    <SkewTransform AngleX="2.726"/>
+                    <RotateTransform/>
+                    <TranslateTransform X="-0.524"/>
+                </TransformGroup>
+            </Label.RenderTransform>
+        </Label>
+
     </Grid>
 </Window>
