@@ -13,6 +13,8 @@ using System.Windows.Navigation;
 using System.Windows.Shapes;
 using System.IO;
 using System.Security;
+using System.Net.Sockets;
+using System.Net;
 
 namespace Client
 {
@@ -53,7 +55,70 @@ namespace Client
         private void Button_Click_1(object sender, RoutedEventArgs e)
         {
 
+            int BufferSize = 1024;
+            byte[] SendingBuffer = null;
+            TcpClient client = null;
+            NetworkStream netstream = null;
+            try
+            {
+                client = new TcpClient(IPAddress.Loopback.ToString(), 5000);
+                netstream = client.GetStream();
+
+                byte[] bytesToSend = ASCIIEncoding.ASCII.GetBytes(filenameTextBox.Text);
+                netstream.Write(bytesToSend, 0, bytesToSend.Length);
+
+                TcpListener Listener = null;
+                try
+                {
+                    Listener = new TcpListener(IPAddress.Loopback, 5000);
+                    Listener.Start();
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine(ex.Message);
+                }
+
+                while (true)
+                {
+                    if (Listener.Pending())
+                        break;
+                }
+
+                FileStream Fs = new FileStream(selectedFileTextBox.Text, FileMode.Open, FileAccess.Read);
+                int NoOfPackets = Convert.ToInt32
+             (Math.Ceiling(Convert.ToDouble(Fs.Length) / Convert.ToDouble(BufferSize)));
+                progressBar.Maximum = NoOfPackets;
+                int TotalLength = (int)Fs.Length;
+                int CurrentPacketLength, counter = 0;
+                for (int i = 0; i < NoOfPackets; i++)
+                {
+                    if (TotalLength > BufferSize)
+                    {
+                        CurrentPacketLength = BufferSize;
+                        TotalLength = TotalLength - CurrentPacketLength;
+                    }
+                    else
+                        CurrentPacketLength = TotalLength;
+                    SendingBuffer = new byte[CurrentPacketLength];
+                    Fs.Read(SendingBuffer, 0, CurrentPacketLength);
+                    netstream.Write(SendingBuffer, 0, (int)SendingBuffer.Length);
+                    if (progressBar.Value >= progressBar.Maximum)
+                        progressBar.Value = progressBar.Minimum;
+                    progressBar.Value++;
+                }
+                Fs.Close();
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine(ex.Message);
+            }
+            finally
+            {
+                netstream.Close();
+                client.Close();
+            }
         }
+
 
         private void RadioButton_Checked(object sender, RoutedEventArgs e)
         {

@@ -5,11 +5,11 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:Client"
         mc:Ignorable="d"
-        Title="Encrypting program by KM&amp;KK company" Height="204.833" Width="393.5">
+        Title="Encrypting program by KM&amp;KK company" Height="246.833" Width="494.833">
     <Grid>
-        <Button x:Name="fileSelectButton" Content="Select file" HorizontalAlignment="Left" Margin="156,46,0,0" VerticalAlignment="Top" Width="76" Click="Button_Click"/>
-        <TextBox x:Name="selectedFileTextBox" HorizontalAlignment="Left" Height="24" Margin="0,7,0,0" TextWrapping="Wrap" VerticalAlignment="Top" Width="386"/>
-        <Button x:Name="sendButton" Content="Send" HorizontalAlignment="Left" Margin="286,137,0,0" VerticalAlignment="Top" Width="75" Click="Button_Click_1"/>
+        <Button x:Name="fileSelectButton" Content="Select file" HorizontalAlignment="Left" Margin="195,48,0,0" VerticalAlignment="Top" Width="76" Click="Button_Click" RenderTransformOrigin="0.772,0.883"/>
+        <TextBox x:Name="selectedFileTextBox" HorizontalAlignment="Left" Height="24" Margin="0,7,0,0" TextWrapping="Wrap" VerticalAlignment="Top" Width="477"/>
+        <Button x:Name="sendButton" Content="Send" HorizontalAlignment="Left" Margin="359,177,0,0" VerticalAlignment="Top" Width="75" Click="Button_Click_1"/>
         <RadioButton x:Name="ecbRadioButton" Content="ECB" HorizontalAlignment="Left" Margin="25,80,0,0" VerticalAlignment="Top" Checked="RadioButton_Checked"/>
         <RadioButton x:Name="cbcRadioButton" Content="CBC" HorizontalAlignment="Left" Margin="25,100,0,0" VerticalAlignment="Top"/>
         <RadioButton x:Name="cfbRadioButton" Content="CFB" HorizontalAlignment="Left" Margin="25,120,0,0" VerticalAlignment="Top"/>
@@ -24,6 +24,8 @@
                 </TransformGroup>
             </Label.RenderTransform>
         </Label>
+        <ProgressBar x:Name="progressBar" HorizontalAlignment="Left" Height="2" Margin="0,214,0,0" VerticalAlignment="Top" Width="487"/>
+        <TextBox x:Name="filenameTextBox" HorizontalAlignment="Left" Height="23" Margin="319,48,0,0" TextWrapping="Wrap" VerticalAlignment="Top" Width="148" AutomationProperties.HelpText="lala" Text="Output file name"/>
 
     </Grid>
 </Window>
