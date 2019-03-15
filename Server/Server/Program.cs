@@ -18,8 +18,9 @@ namespace Server
         {
             TcpListener Listener = null;
 
-            Thread.CurrentThread.CurrentCulture = CultureInfo.InvariantCulture;
-            Thread.CurrentThread.CurrentUICulture = CultureInfo.InvariantCulture;
+            var cultureInfo = CultureInfo.GetCultureInfo("en-GB");
+            Thread.CurrentThread.CurrentCulture = cultureInfo;
+            Thread.CurrentThread.CurrentUICulture = cultureInfo;
             try
             {
                 Listener = new TcpListener(IPAddress.Loopback, 5000);
@@ -54,22 +55,37 @@ namespace Server
                         //---convert the data received into a string---
                         string SaveFileName = Encoding.ASCII.GetString(buffer, 0, bytesRead);
                         Console.WriteLine("File name: " + SaveFileName);
-                        netstream.Write(ASCIIEncoding.ASCII.GetBytes("OK"), 0, ASCIIEncoding.ASCII.GetBytes("OK").Length);
+                        netstream.Write(ASCIIEncoding.ASCII.GetBytes("O"), 0, ASCIIEncoding.ASCII.GetBytes("O").Length);
                         int totalrecbytes = 0;
 
                         while (client.Available == 0) { }
 
 
                         FileStream Fs = new FileStream(".\\UploadedFiles\\" + SaveFileName, FileMode.OpenOrCreate, FileAccess.Write);
-                        while ((RecBytes = netstream.Read(RecData, 0, RecData.Length)) > 0)
-                        {
-                            Fs.Write(RecData, 0, RecBytes);
-                            totalrecbytes += RecBytes;
-                        }
-                        Fs.Close();
 
-                        netstream.Close();
+                        while (netstream.DataAvailable)
+                        {
+                            while (netstream.DataAvailable)
+                            {
+                                RecBytes = netstream.Read(RecData, 0, RecData.Length);
+                                Fs.Write(RecData, 0, RecBytes);
+                                totalrecbytes += RecBytes;
+                            }
+                            System.Threading.Thread.Sleep(300);
+                        }
+
+                        netstream.Write(ASCIIEncoding.ASCII.GetBytes("E"), 0, ASCIIEncoding.ASCII.GetBytes("E").Length);
+
+
+
+                        Fs.Flush();
+                        Fs.Close();
+                        client.Client.Disconnect(false);
                         client.Close();
+                        netstream.Close();
+
+
+                        Console.WriteLine("File saved");
 
                     }
                 }

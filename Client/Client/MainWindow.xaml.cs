@@ -69,14 +69,13 @@ namespace Client
 
                 while (client.Available == 0) { }
 
-                client.GetStream().Flush();
-
+                netstream.ReadByte();
+                
                 FileStream Fs = new FileStream(selectedFileTextBox.Text, FileMode.Open, FileAccess.Read);
-                int NoOfPackets = Convert.ToInt32
-             (Math.Ceiling(Convert.ToDouble(Fs.Length) / Convert.ToDouble(BufferSize)));
+                int NoOfPackets = Convert.ToInt32(Math.Ceiling(Convert.ToDouble(Fs.Length) / Convert.ToDouble(BufferSize)));
                 progressBar.Maximum = NoOfPackets;
                 int TotalLength = (int)Fs.Length;
-                int CurrentPacketLength, counter = 0;
+                int CurrentPacketLength;
                 for (int i = 0; i < NoOfPackets; i++)
                 {
                     if (TotalLength > BufferSize)
@@ -90,20 +89,28 @@ namespace Client
                     SendingBuffer = new byte[CurrentPacketLength];
                     Fs.Read(SendingBuffer, 0, CurrentPacketLength);
                     netstream.Write(SendingBuffer, 0, (int)SendingBuffer.Length);
+                    netstream.Flush();
                     if (progressBar.Value >= progressBar.Maximum)
                         progressBar.Value = progressBar.Minimum;
                     progressBar.Value++;
                 }
+                netstream.Flush();
+
+                while (client.Available == 0) { }
+
+                while (netstream.ReadByte() != -1) { }
+
                 Fs.Close();
             }
             catch (Exception ex)
             {
-                Console.WriteLine(ex.Message);
+                System.Windows.MessageBox.Show(ex.Message, "Error");
+                //Console.WriteLine(ex.Message);
             }
             finally
             {
-                //netstream.Close();
-                //client.Close();
+                netstream.Close();
+                client.Close();
             }
         }
 
