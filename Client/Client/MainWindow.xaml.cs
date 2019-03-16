@@ -32,16 +32,12 @@ namespace Client
             // Create OpenFileDialog 
             Microsoft.Win32.OpenFileDialog dlg = new Microsoft.Win32.OpenFileDialog();
 
-
-
             // Set filter for file extension and default file extension 
-            dlg.DefaultExt = ".txt";
+            dlg.DefaultExt = ".png";
             dlg.Filter = "png Files (*.png)|*.png|mp3 Files (*.mp3)|*.mp3|avi Files (*.avi)|*.avi|txt Files (*.txt)|*.txt";
-
 
             // Display OpenFileDialog by calling ShowDialog method 
             Nullable<bool> result = dlg.ShowDialog();
-
 
             // Get the selected file name and display in a TextBox 
             if (result == true)
@@ -54,28 +50,34 @@ namespace Client
 
         private void Button_Click_1(object sender, RoutedEventArgs e)
         {
-
-            int BufferSize = 1024;
+            int BufferSize = 1024, tries = 0;
             byte[] SendingBuffer = null;
             TcpClient client = null;
             NetworkStream netstream = null;
             try
             {
-                client = new TcpClient(IPAddress.Loopback.ToString(), 5000);
-                netstream = client.GetStream();
+                while (tries++ < 100) {
+                    try
+                    {
+                        client = new TcpClient("127.0.0.1", 5000);
+                        netstream = client.GetStream();
+                        break;
+                    }
+                    catch (Exception e1) { }
+                }
 
                 byte[] bytesToSend = ASCIIEncoding.ASCII.GetBytes(filenameTextBox.Text);
                 netstream.Write(bytesToSend, 0, bytesToSend.Length);
 
-                while (client.Available == 0) { }
-
-                netstream.ReadByte();
+                while (netstream.ReadByte() != 'O') { };
                 
                 FileStream Fs = new FileStream(selectedFileTextBox.Text, FileMode.Open, FileAccess.Read);
                 int NoOfPackets = Convert.ToInt32(Math.Ceiling(Convert.ToDouble(Fs.Length) / Convert.ToDouble(BufferSize)));
                 progressBar.Maximum = NoOfPackets;
                 int TotalLength = (int)Fs.Length;
                 int CurrentPacketLength;
+
+                netstream.WriteTimeout = 5000;
                 for (int i = 0; i < NoOfPackets; i++)
                 {
                     if (TotalLength > BufferSize)
@@ -89,16 +91,14 @@ namespace Client
                     SendingBuffer = new byte[CurrentPacketLength];
                     Fs.Read(SendingBuffer, 0, CurrentPacketLength);
                     netstream.Write(SendingBuffer, 0, (int)SendingBuffer.Length);
-                    netstream.Flush();
+
                     if (progressBar.Value >= progressBar.Maximum)
                         progressBar.Value = progressBar.Minimum;
                     progressBar.Value++;
+                    progressBar.UpdateLayout();
                 }
                 netstream.Flush();
-
-                while (client.Available == 0) { }
-
-                while (netstream.ReadByte() != -1) { }
+                while (netstream.ReadByte() != 'O') { }
 
                 Fs.Close();
             }
