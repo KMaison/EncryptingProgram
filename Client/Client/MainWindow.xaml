@@ -24,7 +24,16 @@
                 </TransformGroup>
             </Label.RenderTransform>
         </Label>
-        <ProgressBar x:Name="progressBar" HorizontalAlignment="Left" Height="2" Margin="0,214,0,0" VerticalAlignment="Top" Width="487"/>
+        <ProgressBar x:Name="progressBar" HorizontalAlignment="Left" Height="22" Margin="0,196,0,-0.4" VerticalAlignment="Top" Width="487" RenderTransformOrigin="0.5,0.5">
+            <ProgressBar.RenderTransform>
+                <TransformGroup>
+                    <ScaleTransform ScaleY="-1"/>
+                    <SkewTransform/>
+                    <RotateTransform/>
+                    <TranslateTransform/>
+                </TransformGroup>
+            </ProgressBar.RenderTransform>
+        </ProgressBar>
         <TextBox x:Name="filenameTextBox" HorizontalAlignment="Left" Height="23" Margin="319,48,0,0" TextWrapping="Wrap" VerticalAlignment="Top" Width="148" AutomationProperties.HelpText="lala" Text="Output file name"/>
 
     </Grid>
