@@ -65,8 +65,8 @@ namespace Client
                     }
                     catch (Exception e1) { }
                 }
-
-                byte[] bytesToSend = ASCIIEncoding.ASCII.GetBytes(filenameTextBox.Text);
+                string extension = System.IO.Path.GetExtension(selectedFileTextBox.Text);
+                byte[] bytesToSend = ASCIIEncoding.ASCII.GetBytes(filenameTextBox.Text+extension);
                 netstream.Write(bytesToSend, 0, bytesToSend.Length);
 
                 while (netstream.ReadByte() != 'O') { };
