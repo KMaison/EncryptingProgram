@@ -5,36 +5,9 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:Client"
         mc:Ignorable="d"
-        Title="Encrypting program by KM&amp;KK company" Height="246.833" Width="494.833">
+        Title="MainWindow" Height="450" Width="800">
     <Grid>
-        <Button x:Name="fileSelectButton" Content="Select file" HorizontalAlignment="Left" Margin="195,48,0,0" VerticalAlignment="Top" Width="76" Click="Button_Click" RenderTransformOrigin="0.772,0.883"/>
-        <TextBox x:Name="selectedFileTextBox" HorizontalAlignment="Left" Height="24" Margin="0,7,0,0" TextWrapping="Wrap" VerticalAlignment="Top" Width="477"/>
-        <Button x:Name="sendButton" Content="Send" HorizontalAlignment="Left" Margin="359,177,0,0" VerticalAlignment="Top" Width="75" Click="Button_Click_1"/>
-        <RadioButton x:Name="ecbRadioButton" Content="ECB" HorizontalAlignment="Left" Margin="25,80,0,0" VerticalAlignment="Top" Checked="RadioButton_Checked"/>
-        <RadioButton x:Name="cbcRadioButton" Content="CBC" HorizontalAlignment="Left" Margin="25,100,0,0" VerticalAlignment="Top"/>
-        <RadioButton x:Name="cfbRadioButton" Content="CFB" HorizontalAlignment="Left" Margin="25,120,0,0" VerticalAlignment="Top"/>
-        <RadioButton x:Name="ofbRadioButton" Content="OFB" HorizontalAlignment="Left" Margin="25,140,0,0" VerticalAlignment="Top"/>
-        <Label Content="Encryption type:" HorizontalAlignment="Left" Margin="11,48,0,0" VerticalAlignment="Top" RenderTransformOrigin="0.462,0.577">
-            <Label.RenderTransform>
-                <TransformGroup>
-                    <ScaleTransform/>
-                    <SkewTransform AngleX="2.726"/>
-                    <RotateTransform/>
-                    <TranslateTransform X="-0.524"/>
-                </TransformGroup>
-            </Label.RenderTransform>
-        </Label>
-        <ProgressBar x:Name="progressBar" HorizontalAlignment="Left" Height="22" Margin="0,196,0,-0.4" VerticalAlignment="Top" Width="487" RenderTransformOrigin="0.5,0.5">
-            <ProgressBar.RenderTransform>
-                <TransformGroup>
-                    <ScaleTransform ScaleY="-1"/>
-                    <SkewTransform/>
-                    <RotateTransform/>
-                    <TranslateTransform/>
-                </TransformGroup>
-            </ProgressBar.RenderTransform>
-        </ProgressBar>
-        <TextBox x:Name="filenameTextBox" HorizontalAlignment="Left" Height="23" Margin="319,48,0,0" TextWrapping="Wrap" VerticalAlignment="Top" Width="148" AutomationProperties.HelpText="lala" Text="Output file name"/>
+        <TextBox x:Name="UserConsole" HorizontalAlignment="Left" Height="409" Margin="10,10,0,0" TextWrapping="Wrap" VerticalAlignment="Top" Width="370"/>
 
     </Grid>
 </Window>
