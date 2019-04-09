@@ -29,55 +29,64 @@ namespace Client
             InitializeComponent();
         }
 
-		private static int iterations = 2;
-		private static int keySize = 256;
+		private static readonly int iterations = 10;
 
-		private static string hash = "SHA1";
-		private static string salt = "aselrias38490a32"; // Random
-		private static string vector = "8947az34awl34kjq"; // Random
-
-//endregion
-
-		public static string Encrypt(string value, string password)
+		public static byte[] CreateKey(string password, byte[] salt)
 		{
-			return Encrypt<AesManaged>(value, password);
+			using (var rfc2898DeriveBytes = new Rfc2898DeriveBytes(password, salt, iterations))
+				return rfc2898DeriveBytes.GetBytes(32);
 		}
 
-		public static string Encrypt<T>(string value, string password)
-				where T : SymmetricAlgorithm, new()
+		private static byte[] GetSalt()
 		{
-			byte[] vectorBytes = Encoding.ASCII.GetBytes(vector);
-			byte[] saltBytes = Encoding.ASCII.GetBytes(salt);
-			byte[] valueBytes = Encoding.UTF8.GetBytes(value);
-
-
-			
-			byte[] encrypted;
-
-			using (T cipher = new T())
+			var salt = new byte[32];
+			using (var random = new RNGCryptoServiceProvider())
 			{
-				PasswordDeriveBytes _passwordBytes =
-					new PasswordDeriveBytes(password, saltBytes, hash, Siterations);
-				byte[] keyBytes = _passwordBytes.GetBytes(keySize / 8);
+				random.GetNonZeroBytes(salt);
+			}
 
-				cipher.Mode = CipherMode.CBC;
+			return salt;
+		}
 
-				using (ICryptoTransform encryptor = cipher.CreateEncryptor(keyBytes, vectorBytes))
+		public static string Encrypt(string input, string password)
+		{
+			byte[] encrypted;
+			byte[] IV;
+			byte[] Salt = GetSalt();
+			byte[] Key = CreateKey(password, Salt);
+
+			using (Aes aesAlg = Aes.Create())
+			{
+				aesAlg.Key = Key;
+				aesAlg.Padding = PaddingMode.PKCS7;
+				aesAlg.Mode = CipherMode.CBC;
+
+				aesAlg.GenerateIV();
+				IV = aesAlg.IV;
+
+				var encryptor = aesAlg.CreateEncryptor(aesAlg.Key, aesAlg.IV);
+
+				using (var msEncrypt = new MemoryStream())
 				{
-					using (MemoryStream to = new MemoryStream())
+					using (var csEncrypt = new CryptoStream(msEncrypt, encryptor, CryptoStreamMode.Write))
 					{
-						using (CryptoStream writer = new CryptoStream(to, encryptor, CryptoStreamMode.Write))
+						using (var swEncrypt = new StreamWriter(csEncrypt))
 						{
-							writer.Write(valueBytes, 0, valueBytes.Length);
-							writer.FlushFinalBlock();
-							encrypted = to.ToArray();
+							swEncrypt.Write(input);
 						}
+						encrypted = msEncrypt.ToArray();
 					}
 				}
-				cipher.Clear();
 			}
-			return Convert.ToBase64String(encrypted);
+
+			byte[] combinedIvSaltCt = new byte[Salt.Length + IV.Length + encrypted.Length];
+			Array.Copy(Salt, 0, combinedIvSaltCt, 0, Salt.Length);
+			Array.Copy(IV, 0, combinedIvSaltCt, Salt.Length, IV.Length);
+			Array.Copy(encrypted, 0, combinedIvSaltCt, Salt.Length + IV.Length, encrypted.Length);
+
+			return Convert.ToBase64String(combinedIvSaltCt.ToArray());
 		}
+
 
 		private void Button_Click(object sender, RoutedEventArgs e)
         {
