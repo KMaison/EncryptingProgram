@@ -15,6 +15,7 @@ using System.IO;
 using System.Security;
 using System.Net.Sockets;
 using System.Net;
+using System.Security.Cryptography;
 
 namespace Client
 {
@@ -27,7 +28,58 @@ namespace Client
         {
             InitializeComponent();
         }
-        private void Button_Click(object sender, RoutedEventArgs e)
+
+		private static int iterations = 2;
+		private static int keySize = 256;
+
+		private static string hash = "SHA1";
+		private static string salt = "aselrias38490a32"; // Random
+		private static string vector = "8947az34awl34kjq"; // Random
+
+//endregion
+
+		public static string Encrypt(string value, string password)
+		{
+			return Encrypt<AesManaged>(value, password);
+		}
+
+		public static string Encrypt<T>(string value, string password)
+				where T : SymmetricAlgorithm, new()
+		{
+			byte[] vectorBytes = Encoding.ASCII.GetBytes(vector);
+			byte[] saltBytes = Encoding.ASCII.GetBytes(salt);
+			byte[] valueBytes = Encoding.UTF8.GetBytes(value);
+
+
+			
+			byte[] encrypted;
+
+			using (T cipher = new T())
+			{
+				PasswordDeriveBytes _passwordBytes =
+					new PasswordDeriveBytes(password, saltBytes, hash, Siterations);
+				byte[] keyBytes = _passwordBytes.GetBytes(keySize / 8);
+
+				cipher.Mode = CipherMode.CBC;
+
+				using (ICryptoTransform encryptor = cipher.CreateEncryptor(keyBytes, vectorBytes))
+				{
+					using (MemoryStream to = new MemoryStream())
+					{
+						using (CryptoStream writer = new CryptoStream(to, encryptor, CryptoStreamMode.Write))
+						{
+							writer.Write(valueBytes, 0, valueBytes.Length);
+							writer.FlushFinalBlock();
+							encrypted = to.ToArray();
+						}
+					}
+				}
+				cipher.Clear();
+			}
+			return Convert.ToBase64String(encrypted);
+		}
+
+		private void Button_Click(object sender, RoutedEventArgs e)
         {
             // Create OpenFileDialog 
             Microsoft.Win32.OpenFileDialog dlg = new Microsoft.Win32.OpenFileDialog();
