@@ -33,20 +33,15 @@ namespace Client
 
 		private void Button_Click(object sender, RoutedEventArgs e)
         {
-            // Create OpenFileDialog 
             Microsoft.Win32.OpenFileDialog dlg = new Microsoft.Win32.OpenFileDialog();
 
-            // Set filter for file extension and default file extension 
             dlg.DefaultExt = ".png";
             dlg.Filter = "png Files (*.png)|*.png|mp3 Files (*.mp3)|*.mp3|avi Files (*.avi)|*.avi|txt Files (*.txt)|*.txt";
 
-            // Display OpenFileDialog by calling ShowDialog method 
             Nullable<bool> result = dlg.ShowDialog();
 
-            // Get the selected file name and display in a TextBox 
             if (result == true)
             {
-                // Open document 
                 string filename = dlg.FileName;
                 selectedFileTextBox.Text = filename;
             }
@@ -113,10 +108,10 @@ namespace Client
                     byte[] encypted = encryptor.Encrypt(SendingBuffer);
                     netstream.Write(encypted, 0, (int)encypted.Length);
 
-                    if (progressBar.Value >= progressBar.Maximum)
-                        progressBar.Value = progressBar.Minimum;
-                    progressBar.Value++;
-                    progressBar.UpdateLayout();
+                    //if (progressBar.Value >= progressBar.Maximum)
+                    //    progressBar.Value = progressBar.Minimum;
+                    //progressBar.Value++;
+                    //progressBar.UpdateLayout();
                 }
                 netstream.Flush();
                 while (netstream.ReadByte() != 'O') { }
@@ -126,7 +121,6 @@ namespace Client
             catch (Exception ex)
             {
                 System.Windows.MessageBox.Show(ex.Message, "Error");
-                //Console.WriteLine(ex.Message);
             }
             finally
             {

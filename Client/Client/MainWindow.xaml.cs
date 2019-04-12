@@ -37,10 +37,6 @@ namespace Client
             TcpListener Listener = null;
             TcpClient client = null;
 
-            var cultureInfo = CultureInfo.GetCultureInfo("en-GB");  //Wyświetlanie angielskich błedów - nie działa
-            Thread.CurrentThread.CurrentCulture = cultureInfo;
-            Thread.CurrentThread.CurrentUICulture = cultureInfo;
-
             try
             {
                 Listener = new TcpListener(IPAddress.Any, 5000);
@@ -77,14 +73,12 @@ namespace Client
             byte[] Key, IV;
             int RecBytes;
 
-
             this.Dispatcher.Invoke(() => UserConsole.Text += "Incoming File\n");
 
             netstream = client.GetStream();
-
             byte[] buffer = new byte[client.ReceiveBufferSize];
 
-            //---read incoming stream---
+            // read file name
             int bytesRead = netstream.Read(buffer, 0, client.ReceiveBufferSize);
 
             //---convert the data received into a string---
