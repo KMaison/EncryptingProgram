@@ -74,7 +74,9 @@ namespace Client
         {
             NetworkStream netstream = null;
             byte[] RecData = new byte[1024];
+            byte[] Key, IV;
             int RecBytes;
+
 
             this.Dispatcher.Invoke(() => UserConsole.Text += "Incoming File\n");
 
@@ -90,8 +92,26 @@ namespace Client
             this.Dispatcher.Invoke(() => UserConsole.Text += "File name: " + SaveFileName + "\n");
 
             netstream.Write(ASCIIEncoding.ASCII.GetBytes("O"), 0, ASCIIEncoding.ASCII.GetBytes("O").Length);
-            int totalrecbytes = 0;
 
+
+
+            // read AES Key
+            bytesRead = netstream.Read(buffer, 0, client.ReceiveBufferSize);
+            Key = new byte[bytesRead];
+            Array.Copy(buffer, Key, bytesRead);
+            this.Dispatcher.Invoke(() => UserConsole.Text += "Key: " + buffer.ToString() + "\n");
+            netstream.Write(ASCIIEncoding.ASCII.GetBytes("O"), 0, ASCIIEncoding.ASCII.GetBytes("O").Length);
+
+            // read AES IV
+            bytesRead = netstream.Read(buffer, 0, client.ReceiveBufferSize);
+            IV = new byte[bytesRead];
+            Array.Copy(buffer, IV, bytesRead);
+            this.Dispatcher.Invoke(() => UserConsole.Text += "IV: " + buffer.ToString() + "\n");
+            netstream.Write(ASCIIEncoding.ASCII.GetBytes("O"), 0, ASCIIEncoding.ASCII.GetBytes("O").Length);
+
+
+
+            int totalrecbytes = 0;
             while (client.Available == 0) { }
 
             FileStream Fs = new FileStream(".\\UploadedFiles\\" + SaveFileName, FileMode.OpenOrCreate, FileAccess.Write);

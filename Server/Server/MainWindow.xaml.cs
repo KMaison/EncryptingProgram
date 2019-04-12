@@ -17,6 +17,7 @@ using System.Net.Sockets;
 using System.Net;
 using System.Security.Cryptography;
 using System.Threading;
+using Client;
 
 namespace Client
 {
@@ -85,6 +86,17 @@ namespace Client
                 int CurrentPacketLength;
 
                 netstream.WriteTimeout = 5000;
+
+                byte[] genKey, genIV;
+                var encryptor = new Encryption();
+                encryptor.Initialize(out genKey, out genIV);
+
+                netstream.Write(genKey, 0, genKey.Length);
+                while (netstream.ReadByte() != 'O') { };
+
+                netstream.Write(genIV, 0, genIV.Length);
+                while (netstream.ReadByte() != 'O') { };
+
                 for (int i = 0; i < NoOfPackets; i++)
                 {
                     if (TotalLength > BufferSize)
@@ -97,8 +109,8 @@ namespace Client
 
                     SendingBuffer = new byte[CurrentPacketLength];
                     Fs.Read(SendingBuffer, 0, CurrentPacketLength);
-                    byte[] genKey, genIV;
-                    byte[] encypted = Encryption(SendingBuffer, out genKey, out genIV);
+
+                    byte[] encypted = encryptor.Encrypt(SendingBuffer);
                     netstream.Write(encypted, 0, (int)encypted.Length);
 
                     if (progressBar.Value >= progressBar.Maximum)

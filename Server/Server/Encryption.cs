@@ -9,15 +9,7 @@ namespace Client
 {
     class Encryption
     {
-        //private static readonly int iterations = 10;
-
-        //public static byte[] CreateKey(string password, byte[] salt)
-        //{
-        //	using (var rfc2898DeriveBytes = new Rfc2898DeriveBytes(password, salt, iterations))
-        //		return rfc2898DeriveBytes.GetBytes(32);
-        //}
         byte[] IV;
-        //byte[] Salt = GetSalt();
         byte[] Key;
         Aes aesAlg;
         ICryptoTransform encryptor;
@@ -55,10 +47,6 @@ namespace Client
             {
                 using (var csEncrypt = new CryptoStream(msEncrypt, encryptor, CryptoStreamMode.Write))
                 {
-                    //using (var swEncrypt = new StreamWriter(csEncrypt))
-                    //{
-                    //	swEncrypt.Write(input);
-                    //}
                     csEncrypt.Write(input, 0, input.Length);
                 }
                 return msEncrypt.ToArray();
