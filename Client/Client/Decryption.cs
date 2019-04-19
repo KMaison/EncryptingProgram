@@ -28,9 +28,8 @@ namespace Client
                     {
                         using (var csDecrypt = new CryptoStream(msDecrypt, decryptor, CryptoStreamMode.Read))
                         {
-                            decryptedData = new byte[csDecrypt.Length];
+                            decryptedData = new byte[encryptedData.Length];
                             csDecrypt.Read(decryptedData, 0, decryptedData.Length);
-
                         }
                     }
                 }

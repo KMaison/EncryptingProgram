@@ -106,15 +106,14 @@ namespace Client
                 for (int i = 0; i < NoOfPackets; i++)
                 {
                     if (TotalLength > BufferSize)
-                    {
                         CurrentPacketLength = BufferSize;
-                        TotalLength = TotalLength - CurrentPacketLength;
-                    }
                     else
                         CurrentPacketLength = TotalLength;
 
                     SendingBuffer = new byte[CurrentPacketLength];
                     Array.Copy(encyptedData, encyptedData.Length - TotalLength, SendingBuffer, 0, CurrentPacketLength);
+
+                    TotalLength = TotalLength - CurrentPacketLength;
 
                     netstream.Write(SendingBuffer, 0, (int)SendingBuffer.Length);
 
