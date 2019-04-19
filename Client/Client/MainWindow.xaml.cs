@@ -67,7 +67,7 @@ namespace Client
         public int ReceiveFile(TcpClient client)
         {
             NetworkStream netstream = null;
-            byte[] RecData = new byte[1024];
+            byte[] RecData = new byte[1024], TotalRecFileBytes = new byte[0];
             byte[] Key, IV;
             int RecBytes;
 
@@ -87,14 +87,14 @@ namespace Client
             bytesRead = netstream.Read(buffer, 0, client.ReceiveBufferSize);
             Key = new byte[bytesRead];
             Array.Copy(buffer, Key, bytesRead);
-            this.Dispatcher.Invoke(() => UserConsole.Text += "Key: " + buffer.ToString() + "\n");
+            this.Dispatcher.Invoke(() => UserConsole.Text += "Key: " + BitConverter.ToString(buffer).Substring(0, 32) + "\n");
             netstream.Write(ASCIIEncoding.ASCII.GetBytes("O"), 0, ASCIIEncoding.ASCII.GetBytes("O").Length);
 
             // read AES IV
             bytesRead = netstream.Read(buffer, 0, client.ReceiveBufferSize);
             IV = new byte[bytesRead];
             Array.Copy(buffer, IV, bytesRead);
-            this.Dispatcher.Invoke(() => UserConsole.Text += "IV: " + buffer.ToString() + "\n");
+            this.Dispatcher.Invoke(() => UserConsole.Text += "IV: " + BitConverter.ToString(buffer).Substring(0, 32) + "\n");
             netstream.Write(ASCIIEncoding.ASCII.GetBytes("O"), 0, ASCIIEncoding.ASCII.GetBytes("O").Length);
 
 
@@ -112,7 +112,8 @@ namespace Client
                     while (netstream.DataAvailable)
                     {
                         RecBytes = netstream.Read(RecData, 0, RecData.Length);
-                        Fs.Write(RecData, 0, RecBytes);
+                        Array.Resize(ref TotalRecFileBytes, RecBytes);
+                        Array.Copy(RecData, 0, TotalRecFileBytes, totalrecbytes, RecBytes);
                         totalrecbytes += RecBytes;
                     }
                     Thread.Sleep(300);
@@ -120,15 +121,19 @@ namespace Client
                 Thread.Sleep(700);
             }
 
+            // Wysłanie potwierdzenia odbioru
             netstream.Write(ASCIIEncoding.ASCII.GetBytes("O"), 0, ASCIIEncoding.ASCII.GetBytes("O").Length);
 
+            // Dekrypcja
+            var decryptedData = Decryption.Decrypt(TotalRecFileBytes, Key, IV);
+            Fs.Write(decryptedData, 0, decryptedData.Length);
+        
             Fs.Flush();
             Fs.Close();
             client.Close();
             netstream.Close();
 
             this.Dispatcher.Invoke(() => UserConsole.Text += "File saved\n");
-
             return 0;
         }
     }

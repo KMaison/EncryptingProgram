@@ -68,29 +68,40 @@ namespace Client
                     }
                     catch (Exception e1) { }
                 }
+
+                // Wysyłanie nazwy
                 string extension = System.IO.Path.GetExtension(selectedFileTextBox.Text);
                 byte[] bytesToSend = ASCIIEncoding.ASCII.GetBytes(filenameTextBox.Text+extension);
                 netstream.Write(bytesToSend, 0, bytesToSend.Length);
-
+                // Potwierdzenie
                 while (netstream.ReadByte() != 'O') { };
                 
                 FileStream Fs = new FileStream(selectedFileTextBox.Text, FileMode.Open, FileAccess.Read);
-                int NoOfPackets = Convert.ToInt32(Math.Ceiling(Convert.ToDouble(Fs.Length) / Convert.ToDouble(BufferSize)));
-                progressBar.Maximum = NoOfPackets;
-                int TotalLength = (int)Fs.Length;
                 int CurrentPacketLength;
 
                 netstream.WriteTimeout = 5000;
 
+                // Inicjalizacja enkryptora
                 byte[] genKey, genIV;
                 var encryptor = new Encryption();
                 encryptor.Initialize(out genKey, out genIV);
 
                 netstream.Write(genKey, 0, genKey.Length);
+                // Potwierdzenie odbioru Key
                 while (netstream.ReadByte() != 'O') { };
 
                 netstream.Write(genIV, 0, genIV.Length);
+                // Potwierdzenie odbioru IV
                 while (netstream.ReadByte() != 'O') { };
+
+                // Enkrypcja
+                var dataToEncrypt = new byte[Fs.Length];
+                Fs.Read(dataToEncrypt, 0, dataToEncrypt.Length);
+                byte[] encyptedData = encryptor.Encrypt(dataToEncrypt);
+
+                int TotalLength = encyptedData.Length;
+                int NoOfPackets = Convert.ToInt32(Math.Ceiling(Convert.ToDouble(encyptedData.Length) / Convert.ToDouble(BufferSize)));
+                //progressBar.Maximum = NoOfPackets;
 
                 for (int i = 0; i < NoOfPackets; i++)
                 {
@@ -103,10 +114,9 @@ namespace Client
                         CurrentPacketLength = TotalLength;
 
                     SendingBuffer = new byte[CurrentPacketLength];
-                    Fs.Read(SendingBuffer, 0, CurrentPacketLength);
+                    Array.Copy(encyptedData, encyptedData.Length - TotalLength, SendingBuffer, 0, CurrentPacketLength);
 
-                    byte[] encypted = encryptor.Encrypt(SendingBuffer);
-                    netstream.Write(encypted, 0, (int)encypted.Length);
+                    netstream.Write(SendingBuffer, 0, (int)SendingBuffer.Length);
 
                     //if (progressBar.Value >= progressBar.Maximum)
                     //    progressBar.Value = progressBar.Minimum;
