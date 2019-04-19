@@ -55,8 +55,6 @@ namespace Client
                     if (Listener.Pending())
                     {
                         client = Listener.AcceptTcpClient();
-                        //Task.Factory.StartNew(() => ReceiveFile(client)); 
-                        //Nie potrzebne taski raczej
                         ReceiveFile(client);
                     }
                 }
@@ -80,14 +78,10 @@ namespace Client
 
             // read file name
             int bytesRead = netstream.Read(buffer, 0, client.ReceiveBufferSize);
-
             //---convert the data received into a string---
             string SaveFileName = Encoding.ASCII.GetString(buffer, 0, bytesRead);
             this.Dispatcher.Invoke(() => UserConsole.Text += "File name: " + SaveFileName + "\n");
-
             netstream.Write(ASCIIEncoding.ASCII.GetBytes("O"), 0, ASCIIEncoding.ASCII.GetBytes("O").Length);
-
-
 
             // read AES Key
             bytesRead = netstream.Read(buffer, 0, client.ReceiveBufferSize);
@@ -102,7 +96,6 @@ namespace Client
             Array.Copy(buffer, IV, bytesRead);
             this.Dispatcher.Invoke(() => UserConsole.Text += "IV: " + buffer.ToString() + "\n");
             netstream.Write(ASCIIEncoding.ASCII.GetBytes("O"), 0, ASCIIEncoding.ASCII.GetBytes("O").Length);
-
 
 
             int totalrecbytes = 0;
