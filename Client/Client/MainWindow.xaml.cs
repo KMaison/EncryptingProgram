@@ -67,7 +67,7 @@ namespace Client
         public int ReceiveFile(TcpClient client)
         {
             NetworkStream netstream = null;
-            byte[] RecData = new byte[1024], TotalRecFileBytes = new byte[0];
+            byte[] RecData = new byte[1024];
             byte[] Key, IV;
             int RecBytes;
 
@@ -105,31 +105,34 @@ namespace Client
 
             netstream.ReadTimeout = 5000;
 
-            while (netstream.DataAvailable)
+            using (var msEncrypted = new MemoryStream())
             {
                 while (netstream.DataAvailable)
                 {
                     while (netstream.DataAvailable)
                     {
-                        RecBytes = netstream.Read(RecData, 0, RecData.Length);
-                        Array.Resize(ref TotalRecFileBytes, TotalRecFileBytes.Length + RecBytes);
-                        Array.Copy(RecData, 0, TotalRecFileBytes, totalrecbytes, RecBytes);
-                        totalrecbytes += RecBytes;
+                        while (netstream.DataAvailable)
+                        {
+                            RecBytes = netstream.Read(RecData, 0, RecData.Length);
+                            msEncrypted.Write(RecData, 0, RecBytes);
+                            totalrecbytes += RecBytes;
+                        }
+                        Thread.Sleep(300);
                     }
-                    Thread.Sleep(300);
+                    Thread.Sleep(700);
                 }
-                Thread.Sleep(700);
+
+
+                // Wysłanie potwierdzenia odbioru
+                netstream.Write(ASCIIEncoding.ASCII.GetBytes("O"), 0, ASCIIEncoding.ASCII.GetBytes("O").Length);
+
+                // Dekrypcja
+                var decryptedData = Decryption.Decrypt(msEncrypted.ToArray(), Key, IV);
+
+                Fs.Write(decryptedData, 0, decryptedData.Length);
+                Fs.Flush();
+                Fs.Close();
             }
-
-            // Wysłanie potwierdzenia odbioru
-            netstream.Write(ASCIIEncoding.ASCII.GetBytes("O"), 0, ASCIIEncoding.ASCII.GetBytes("O").Length);
-
-            // Dekrypcja
-            var decryptedData = Decryption.Decrypt(TotalRecFileBytes, Key, IV);
-            Fs.Write(decryptedData, 0, decryptedData.Length);
-        
-            Fs.Flush();
-            Fs.Close();
             client.Close();
             netstream.Close();
 
