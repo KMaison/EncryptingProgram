@@ -5,6 +5,7 @@ using System.IO;
 using System.Linq;
 using System.Net;
 using System.Net.Sockets;
+using System.Security.Cryptography;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -69,6 +70,7 @@ namespace Client
             NetworkStream netstream = null;
             byte[] RecData = new byte[1024];
             byte[] Key, IV;
+            CipherMode aesType;
             int RecBytes;
 
             this.Dispatcher.Invoke(() => UserConsole.Text += "Incoming File\n");
@@ -81,6 +83,22 @@ namespace Client
             //---convert the data received into a string---
             string SaveFileName = Encoding.ASCII.GetString(buffer, 0, bytesRead);
             this.Dispatcher.Invoke(() => UserConsole.Text += "File name: " + SaveFileName + "\n");
+            netstream.Write(ASCIIEncoding.ASCII.GetBytes("O"), 0, ASCIIEncoding.ASCII.GetBytes("O").Length);
+
+            // read CipherMode
+            bytesRead = netstream.Read(buffer, 0, client.ReceiveBufferSize);
+            //---convert the data received into a string---
+            string aesTypeStr = Encoding.ASCII.GetString(buffer, 0, bytesRead);
+            this.Dispatcher.Invoke(() => UserConsole.Text += "Cipher Mode: " + aesTypeStr + "\n");
+
+            if (aesTypeStr.Equals("ECB"))
+                aesType = CipherMode.ECB;
+            else if (aesTypeStr.Equals("CBC"))
+                aesType = CipherMode.CBC;
+            else if (aesTypeStr.Equals("CFB"))
+                aesType = CipherMode.CFB;
+            else aesType = CipherMode.OFB;
+
             netstream.Write(ASCIIEncoding.ASCII.GetBytes("O"), 0, ASCIIEncoding.ASCII.GetBytes("O").Length);
 
             // read AES Key
@@ -127,7 +145,7 @@ namespace Client
                 netstream.Write(ASCIIEncoding.ASCII.GetBytes("O"), 0, ASCIIEncoding.ASCII.GetBytes("O").Length);
 
                 // Dekrypcja
-                var decryptedData = Decryption.Decrypt(msEncrypted.ToArray(), Key, IV);
+                var decryptedData = Decryption.Decrypt(msEncrypted.ToArray(), Key, IV, aesType);
 
                 Fs.Write(decryptedData, 0, decryptedData.Length);
                 Fs.Flush();

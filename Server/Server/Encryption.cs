@@ -13,15 +13,16 @@ namespace Client
         byte[] Key;
         Aes aesAlg;
         ICryptoTransform encryptor;
+        CipherMode aesType;
 
-        public void Initialize(out byte[] genKey, out byte[] genIV)
+        public void Initialize(out byte[] genKey, out byte[] genIV, CipherMode aesType)
         {
             aesAlg = Aes.Create();
 
             Key = GetKey();
             aesAlg.Key = Key;
             aesAlg.Padding = PaddingMode.PKCS7;
-            aesAlg.Mode = CipherMode.CBC;
+            aesAlg.Mode = aesType;
             aesAlg.GenerateIV();
             IV = aesAlg.IV;
 

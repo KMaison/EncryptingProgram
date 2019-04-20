@@ -24,8 +24,12 @@ namespace Client
     /// <summary>
     /// Interaction logic for MainWindow.xaml
     /// </summary>
+    /// 
+
     public partial class MainWindow : Window
     {
+        public CipherMode aesType = CipherMode.ECB;
+
         public MainWindow()
         {
             InitializeComponent();
@@ -45,10 +49,6 @@ namespace Client
                 string filename = dlg.FileName;
                 selectedFileTextBox.Text = filename;
             }
-
-            //var abc = "witam serdecznie";
-            //System.Windows.MessageBox.Show(abc, "Aes");
-            //System.Windows.MessageBox.Show(Encrypt(abc, "haslo"), "Aes");
         }
 
         private void Button_Click_1(object sender, RoutedEventArgs e)
@@ -84,7 +84,13 @@ namespace Client
                 // Inicjalizacja enkryptora
                 byte[] genKey, genIV;
                 var encryptor = new Encryption();
-                encryptor.Initialize(out genKey, out genIV);
+                encryptor.Initialize(out genKey, out genIV, aesType);
+
+                // Wysłanie CipherMode
+                bytesToSend = ASCIIEncoding.ASCII.GetBytes(aesType.ToString());
+                netstream.Write(bytesToSend, 0, bytesToSend.Length);
+                // Potwierdzenie
+                while (netstream.ReadByte() != 'O') { };
 
                 netstream.Write(genKey, 0, genKey.Length);
                 // Potwierdzenie odbioru Key
@@ -101,7 +107,6 @@ namespace Client
 
                 int TotalLength = encyptedData.Length;
                 int NoOfPackets = Convert.ToInt32(Math.Ceiling(Convert.ToDouble(encyptedData.Length) / Convert.ToDouble(BufferSize)));
-                //progressBar.Maximum = NoOfPackets;
 
                 for (int i = 0; i < NoOfPackets; i++)
                 {
@@ -116,11 +121,6 @@ namespace Client
                     TotalLength = TotalLength - CurrentPacketLength;
 
                     netstream.Write(SendingBuffer, 0, (int)SendingBuffer.Length);
-
-                    //if (progressBar.Value >= progressBar.Maximum)
-                    //    progressBar.Value = progressBar.Minimum;
-                    //progressBar.Value++;
-                    //progressBar.UpdateLayout();
                 }
                 netstream.Flush();
                 while (netstream.ReadByte() != 'O') { }
@@ -138,10 +138,24 @@ namespace Client
             }
         }
 
-
-        private void RadioButton_Checked(object sender, RoutedEventArgs e)
+        private void ecbRB_Checked(object sender, RoutedEventArgs e)
         {
+            aesType = CipherMode.ECB;
+        }
 
+        private void cbcRB_Checked(object sender, RoutedEventArgs e)
+        {
+            aesType = CipherMode.CBC;
+        }
+
+        private void cfbRB_Checked(object sender, RoutedEventArgs e)
+        {
+            aesType = CipherMode.CFB;
+        }
+
+        private void ofbRB_Checked(object sender, RoutedEventArgs e)
+        {
+            aesType = CipherMode.OFB;
         }
     }
 }

@@ -10,7 +10,7 @@ namespace Client
 {
     class Decryption
     {
-        public static byte[] Decrypt(byte[] encryptedData, byte[] key, byte[] iv)
+        public static byte[] Decrypt(byte[] encryptedData, byte[] key, byte[] iv, CipherMode aesType)
         {
             byte[] decryptedData;
             try
@@ -19,7 +19,7 @@ namespace Client
                 {
                     aesAlg.Key = key;
                     aesAlg.IV = iv;
-                    aesAlg.Mode = CipherMode.CBC;
+                    aesAlg.Mode = aesType;
                     aesAlg.Padding = PaddingMode.PKCS7;
 
                     ICryptoTransform decryptor = aesAlg.CreateDecryptor(aesAlg.Key, aesAlg.IV);
