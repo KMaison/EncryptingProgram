@@ -108,6 +108,12 @@ namespace Client
                 int TotalLength = encyptedData.Length;
                 int NoOfPackets = Convert.ToInt32(Math.Ceiling(Convert.ToDouble(encyptedData.Length) / Convert.ToDouble(BufferSize)));
 
+                var encryptedDataSize = BitConverter.GetBytes(TotalLength);
+                netstream.Write(encryptedDataSize, 0, encryptedDataSize.Length);
+                // Potwierdzenie odbioru wielkości pliku
+                while (netstream.ReadByte() != 'O') { };
+
+
                 for (int i = 0; i < NoOfPackets; i++)
                 {
                     if (TotalLength > BufferSize)

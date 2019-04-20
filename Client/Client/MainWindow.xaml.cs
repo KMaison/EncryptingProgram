@@ -71,7 +71,7 @@ namespace Client
             byte[] RecData = new byte[1024];
             byte[] Key, IV;
             CipherMode aesType;
-            int RecBytes;
+            int RecBytes, FileSize;
 
             this.Dispatcher.Invoke(() => UserConsole.Text += "Incoming File\n");
 
@@ -115,6 +115,12 @@ namespace Client
             this.Dispatcher.Invoke(() => UserConsole.Text += "IV: " + BitConverter.ToString(buffer.Take(32).ToArray()) + "\n");
             netstream.Write(ASCIIEncoding.ASCII.GetBytes("O"), 0, ASCIIEncoding.ASCII.GetBytes("O").Length);
 
+            // read File Size
+            bytesRead = netstream.Read(buffer, 0, client.ReceiveBufferSize);
+            FileSize = BitConverter.ToInt32(buffer, 0);
+            this.Dispatcher.Invoke(() => UserConsole.Text += "Rozmiar pliku: " + FileSize + "B\n");
+            netstream.Write(ASCIIEncoding.ASCII.GetBytes("O"), 0, ASCIIEncoding.ASCII.GetBytes("O").Length);
+
 
             int totalrecbytes = 0;
             while (client.Available == 0) { }
@@ -154,7 +160,7 @@ namespace Client
             client.Close();
             netstream.Close();
 
-            this.Dispatcher.Invoke(() => UserConsole.Text += "File saved\n");
+            this.Dispatcher.Invoke(() => UserConsole.Text += "File saved\n\n");
             return 0;
         }
     }
