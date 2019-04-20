@@ -37,10 +37,6 @@ namespace Client
             TcpListener Listener = null;
             TcpClient client = null;
 
-            var cultureInfo = CultureInfo.GetCultureInfo("en-GB");  //Wyświetlanie angielskich błedów - nie działa
-            Thread.CurrentThread.CurrentCulture = cultureInfo;
-            Thread.CurrentThread.CurrentUICulture = cultureInfo;
-
             try
             {
                 Listener = new TcpListener(IPAddress.Any, 5000);
@@ -59,8 +55,6 @@ namespace Client
                     if (Listener.Pending())
                     {
                         client = Listener.AcceptTcpClient();
-                        //Task.Factory.StartNew(() => ReceiveFile(client)); 
-                        //Nie potrzebne taski raczej
                         ReceiveFile(client);
                     }
                 }
@@ -74,54 +68,75 @@ namespace Client
         {
             NetworkStream netstream = null;
             byte[] RecData = new byte[1024];
+            byte[] Key, IV;
             int RecBytes;
 
             this.Dispatcher.Invoke(() => UserConsole.Text += "Incoming File\n");
 
             netstream = client.GetStream();
-
             byte[] buffer = new byte[client.ReceiveBufferSize];
 
-            //---read incoming stream---
+            // read file name
             int bytesRead = netstream.Read(buffer, 0, client.ReceiveBufferSize);
-
             //---convert the data received into a string---
             string SaveFileName = Encoding.ASCII.GetString(buffer, 0, bytesRead);
             this.Dispatcher.Invoke(() => UserConsole.Text += "File name: " + SaveFileName + "\n");
-
             netstream.Write(ASCIIEncoding.ASCII.GetBytes("O"), 0, ASCIIEncoding.ASCII.GetBytes("O").Length);
-            int totalrecbytes = 0;
 
+            // read AES Key
+            bytesRead = netstream.Read(buffer, 0, client.ReceiveBufferSize);
+            Key = new byte[bytesRead];
+            Array.Copy(buffer, Key, bytesRead);
+            this.Dispatcher.Invoke(() => UserConsole.Text += "Key: " + BitConverter.ToString(buffer.Take(32).ToArray()) + "\n");
+            netstream.Write(ASCIIEncoding.ASCII.GetBytes("O"), 0, ASCIIEncoding.ASCII.GetBytes("O").Length);
+
+            // read AES IV
+            bytesRead = netstream.Read(buffer, 0, client.ReceiveBufferSize);
+            IV = new byte[bytesRead];
+            Array.Copy(buffer, IV, bytesRead);
+            this.Dispatcher.Invoke(() => UserConsole.Text += "IV: " + BitConverter.ToString(buffer.Take(32).ToArray()) + "\n");
+            netstream.Write(ASCIIEncoding.ASCII.GetBytes("O"), 0, ASCIIEncoding.ASCII.GetBytes("O").Length);
+
+
+            int totalrecbytes = 0;
             while (client.Available == 0) { }
 
             FileStream Fs = new FileStream(".\\UploadedFiles\\" + SaveFileName, FileMode.OpenOrCreate, FileAccess.Write);
 
             netstream.ReadTimeout = 5000;
 
-            while (netstream.DataAvailable)
+            using (var msEncrypted = new MemoryStream())
             {
                 while (netstream.DataAvailable)
                 {
                     while (netstream.DataAvailable)
                     {
-                        RecBytes = netstream.Read(RecData, 0, RecData.Length);
-                        Fs.Write(RecData, 0, RecBytes);
-                        totalrecbytes += RecBytes;
+                        while (netstream.DataAvailable)
+                        {
+                            RecBytes = netstream.Read(RecData, 0, RecData.Length);
+                            msEncrypted.Write(RecData, 0, RecBytes);
+                            totalrecbytes += RecBytes;
+                        }
+                        Thread.Sleep(300);
                     }
-                    Thread.Sleep(300);
+                    Thread.Sleep(700);
                 }
-                Thread.Sleep(700);
+
+
+                // Wysłanie potwierdzenia odbioru
+                netstream.Write(ASCIIEncoding.ASCII.GetBytes("O"), 0, ASCIIEncoding.ASCII.GetBytes("O").Length);
+
+                // Dekrypcja
+                var decryptedData = Decryption.Decrypt(msEncrypted.ToArray(), Key, IV);
+
+                Fs.Write(decryptedData, 0, decryptedData.Length);
+                Fs.Flush();
+                Fs.Close();
             }
-
-            netstream.Write(ASCIIEncoding.ASCII.GetBytes("O"), 0, ASCIIEncoding.ASCII.GetBytes("O").Length);
-
-            Fs.Flush();
-            Fs.Close();
             client.Close();
             netstream.Close();
 
             this.Dispatcher.Invoke(() => UserConsole.Text += "File saved\n");
-
             return 0;
         }
     }
