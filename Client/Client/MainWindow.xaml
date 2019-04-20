@@ -7,8 +7,8 @@
         mc:Ignorable="d"
         Title="MainWindow" Height="450" Width="800">
     <Grid>
-        <TextBox x:Name="UserConsole" HorizontalAlignment="Left" Height="409" Margin="10,10,0,0" TextWrapping="Wrap" VerticalAlignment="Top" Width="370"/>
-        <ProgressBar HorizontalAlignment="Left" Height="10" Margin="513,135,0,0" VerticalAlignment="Top" Width="100"/>
+        <TextBox x:Name="UserConsole" HorizontalAlignment="Left" Height="419" TextWrapping="Wrap" VerticalAlignment="Top" Width="380" Focusable="False"/>
+        <ProgressBar x:Name="FileSizePB" HorizontalAlignment="Left" Height="18" Margin="380,401,0,0" VerticalAlignment="Top" Width="412"/>
 
     </Grid>
 </Window>

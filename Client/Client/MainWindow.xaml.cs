@@ -61,7 +61,7 @@ namespace Client
                 }
                 catch (Exception ex)
                 {
-                    this.Dispatcher.Invoke(() => UserConsole.Text += ex.Message + "\n"); ;
+                    this.Dispatcher.Invoke(() => UserConsole.Text += ex.Message + "\n");
                 }
             }
         }
@@ -112,7 +112,7 @@ namespace Client
             bytesRead = netstream.Read(buffer, 0, client.ReceiveBufferSize);
             IV = new byte[bytesRead];
             Array.Copy(buffer, IV, bytesRead);
-            this.Dispatcher.Invoke(() => UserConsole.Text += "IV: " + BitConverter.ToString(buffer.Take(32).ToArray()) + "\n");
+            this.Dispatcher.Invoke(() => UserConsole.Text += "IV: " + BitConverter.ToString(buffer.Take(16).ToArray()) + "\n");
             netstream.Write(ASCIIEncoding.ASCII.GetBytes("O"), 0, ASCIIEncoding.ASCII.GetBytes("O").Length);
 
             // read File Size
@@ -120,7 +120,10 @@ namespace Client
             FileSize = BitConverter.ToInt32(buffer, 0);
             this.Dispatcher.Invoke(() => UserConsole.Text += "Rozmiar pliku: " + FileSize + "B\n");
             netstream.Write(ASCIIEncoding.ASCII.GetBytes("O"), 0, ASCIIEncoding.ASCII.GetBytes("O").Length);
-
+            this.Dispatcher.Invoke(() => {
+                FileSizePB.Maximum = FileSize;
+                FileSizePB.Value = 0;
+            });
 
             int totalrecbytes = 0;
             while (client.Available == 0) { }
@@ -138,6 +141,9 @@ namespace Client
                         while (netstream.DataAvailable)
                         {
                             RecBytes = netstream.Read(RecData, 0, RecData.Length);
+                            this.Dispatcher.Invoke(() => {
+                                FileSizePB.Value += RecBytes;
+                            });
                             msEncrypted.Write(RecData, 0, RecBytes);
                             totalrecbytes += RecBytes;
                         }
