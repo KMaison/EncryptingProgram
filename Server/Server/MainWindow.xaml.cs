@@ -18,6 +18,7 @@ using System.Net;
 using System.Security.Cryptography;
 using System.Threading;
 using Client;
+using System.Threading.Tasks;
 
 namespace Client
 {
@@ -29,13 +30,62 @@ namespace Client
     public partial class MainWindow : Window
     {
         public CipherMode aesType = CipherMode.ECB;
+        private TcpClient client;
+        Dictionary<int, string> Clients =
+            new Dictionary<int, string>();
+
 
         public MainWindow()
         {
             InitializeComponent();
+            Task.Factory.StartNew(() => MainFunction());
         }
 
-		private void Button_Click(object sender, RoutedEventArgs e)
+        private void MainFunction()
+        {
+            TcpListener Listener = null;
+            NetworkStream netstream = null;
+
+
+            try
+            {
+                Listener = new TcpListener(IPAddress.Any, 5001);
+                Listener.Start();
+            }
+            catch (Exception ex)
+            {
+                return;
+            }
+
+            for (; ; )
+            {
+                try
+                {
+                    if (Listener.Pending())
+                    {
+                        client = Listener.AcceptTcpClient();
+                        netstream = client.GetStream();
+                        byte[] buffer = new byte[client.ReceiveBufferSize];
+                        // read file name
+                        int bytesRead = netstream.Read(buffer, 0, client.ReceiveBufferSize);
+                        //---convert the data received into a string---
+                        string pubKey = Encoding.ASCII.GetString(buffer, 0, bytesRead);
+                        netstream.Write(ASCIIEncoding.ASCII.GetBytes("O"), 0, ASCIIEncoding.ASCII.GetBytes("O").Length);
+
+                        bytesRead = netstream.Read(buffer, 0, client.ReceiveBufferSize);
+                        int userID = BitConverter.ToInt32(buffer, 0);
+                        netstream.Write(ASCIIEncoding.ASCII.GetBytes("O"), 0, ASCIIEncoding.ASCII.GetBytes("O").Length);
+
+                        Clients.Add(userID, pubKey);
+                    }
+                }
+                catch (Exception ex)
+                {
+                }
+            }
+        }
+
+        private void Button_Click(object sender, RoutedEventArgs e)
         {
             Microsoft.Win32.OpenFileDialog dlg = new Microsoft.Win32.OpenFileDialog();
 
@@ -59,7 +109,8 @@ namespace Client
             NetworkStream netstream = null;
             try
             {
-                while (tries++ < 100) {
+                while (tries++ < 100)
+                {
                     try
                     {
                         client = new TcpClient("127.0.0.1", 5000);
@@ -71,11 +122,19 @@ namespace Client
 
                 // Wysyłanie nazwy
                 string extension = System.IO.Path.GetExtension(selectedFileTextBox.Text);
-                byte[] bytesToSend = ASCIIEncoding.ASCII.GetBytes(filenameTextBox.Text+extension);
+                byte[] bytesToSend = ASCIIEncoding.ASCII.GetBytes(filenameTextBox.Text + extension);
                 netstream.Write(bytesToSend, 0, bytesToSend.Length);
                 // Potwierdzenie
                 while (netstream.ReadByte() != 'O') { };
-                
+
+                // Odbieranie UserID
+                byte[] buffer = new byte[client.ReceiveBufferSize];
+                var bytesRead = netstream.Read(buffer, 0, client.ReceiveBufferSize);
+                int userID = BitConverter.ToInt32(buffer, 0);
+                netstream.Write(ASCIIEncoding.ASCII.GetBytes("O"), 0, ASCIIEncoding.ASCII.GetBytes("O").Length);
+
+
+
                 FileStream Fs = new FileStream(selectedFileTextBox.Text, FileMode.Open, FileAccess.Read);
                 int CurrentPacketLength;
 
@@ -92,7 +151,20 @@ namespace Client
                 // Potwierdzenie
                 while (netstream.ReadByte() != 'O') { };
 
-                netstream.Write(genKey, 0, genKey.Length);
+                string pubKeyString = Clients[userID];
+                var csp = new RSACryptoServiceProvider();
+                //get a stream from the string
+                var sr = new System.IO.StringReader(pubKeyString);
+                //we need a deserializer
+                var xs = new System.Xml.Serialization.XmlSerializer(typeof(RSAParameters));
+                //get the object back from the stream
+                var pubKey = (RSAParameters)xs.Deserialize(sr);
+                csp.ImportParameters(pubKey);
+                //apply pkcs#1.5 padding and encrypt our data 
+                var bytesCypherText = csp.Encrypt(genKey, false);
+
+                //Generowanie klucza
+                netstream.Write(bytesCypherText, 0, bytesCypherText.Length);
                 // Potwierdzenie odbioru Key
                 while (netstream.ReadByte() != 'O') { };
 
