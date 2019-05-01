@@ -44,38 +44,25 @@ namespace Client
             while (czyZalogowano == false) { };
             this.Dispatcher.Invoke(() => Login.Content = "Zalogowano");
 
-            //lets take a new CSP with a new 2048 bit rsa key pair
+            //Kryptografia asymetryczna
             var csp = new RSACryptoServiceProvider(2048);
 
-            //how to get the private key
             privKey = csp.ExportParameters(true);
-
-            //and the public key ...
             pubKey = csp.ExportParameters(false);
 
-            //converting the public key into a string representation
             string pubKeyString;
             {
-                //we need some buffer
                 var sw = new System.IO.StringWriter();
-                //we need a serializer
                 var xs = new System.Xml.Serialization.XmlSerializer(typeof(RSAParameters));
-                //serialize the key into the stream
                 xs.Serialize(sw, pubKey);
-                //get the string from the stream
                 pubKeyString = sw.ToString();
             }
 
-            //converting the public key into a string representation
             string privKeyString;
             {
-                //we need some buffer
                 var sw = new System.IO.StringWriter();
-                //we need a serializer
                 var xs = new System.Xml.Serialization.XmlSerializer(typeof(RSAParameters));
-                //serialize the key into the stream
                 xs.Serialize(sw, privKey);
-                //get the string from the stream
                 privKeyString = sw.ToString();
             }
 
@@ -83,10 +70,15 @@ namespace Client
             byte[] IV;
             byte[] Key;
             encryptPrivKey.Initialize(out Key, out IV);
+
+            //Zaszyfriwanie klucza prywatnego z AES
             byte[] encryptedKey = encryptPrivKey.Encrypt(ASCIIEncoding.ASCII.GetBytes(privKeyString));
+
+            //Zapisanie kluczy asymetrycznych
             File.WriteAllText("./Keys/PrivateKeys/" + IdUser, Encoding.ASCII.GetString(encryptedKey, 0, encryptedKey.Length));
             File.WriteAllText("./Keys/PublicKeys/" + IdUser, pubKeyString);
 
+            //Próba połącznia z serwerem
             int tries = 0;
             NetworkStream netstream = null;
             while (tries++ < 100)
@@ -99,6 +91,7 @@ namespace Client
                 }
                 catch (Exception e1) { }
             }
+
             // Wysylanie publicKey
             netstream = client.GetStream();
             byte[] bytesToSend = ASCIIEncoding.ASCII.GetBytes(pubKeyString);
@@ -106,7 +99,7 @@ namespace Client
             // Potwierdzenie
             while (netstream.ReadByte() != 'O') { };
 
-            // Wysyłannie iduser
+            // Wysyłannie IdUser
             bytesToSend = BitConverter.GetBytes(IdUser);
             netstream.Write(bytesToSend, 0, bytesToSend.Length);
             // Potwierdzenie

@@ -13,7 +13,6 @@ namespace Client
         byte[] Key;
         Aes aesAlg;
         ICryptoTransform encryptor;
-        CipherMode aesType;
 
         public void Initialize(out byte[] genKey, out byte[] genIV)
         {

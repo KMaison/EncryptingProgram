@@ -120,7 +120,7 @@ namespace Client
                     catch (Exception e1) { }
                 }
 
-                // Wysyłanie nazwy
+                // Wysyłanie nazwy pliku
                 string extension = System.IO.Path.GetExtension(selectedFileTextBox.Text);
                 byte[] bytesToSend = ASCIIEncoding.ASCII.GetBytes(filenameTextBox.Text + extension);
                 netstream.Write(bytesToSend, 0, bytesToSend.Length);
@@ -151,19 +151,19 @@ namespace Client
                 // Potwierdzenie
                 while (netstream.ReadByte() != 'O') { };
 
+                // Odczytanie klucza publicznego ze słownika Clients
                 string pubKeyString = Clients[userID];
                 var csp = new RSACryptoServiceProvider();
-                //get a stream from the string
+
                 var sr = new System.IO.StringReader(pubKeyString);
-                //we need a deserializer
                 var xs = new System.Xml.Serialization.XmlSerializer(typeof(RSAParameters));
-                //get the object back from the stream
                 var pubKey = (RSAParameters)xs.Deserialize(sr);
                 csp.ImportParameters(pubKey);
-                //apply pkcs#1.5 padding and encrypt our data 
+
+                //Zaszyfrowanie klucza sesyjnego kluczem publicznym
                 var bytesCypherText = csp.Encrypt(genKey, false);
 
-                //Generowanie klucza
+                //Wysłanie zaszyfrowanego klucza publicznego
                 netstream.Write(bytesCypherText, 0, bytesCypherText.Length);
                 // Potwierdzenie odbioru Key
                 while (netstream.ReadByte() != 'O') { };
