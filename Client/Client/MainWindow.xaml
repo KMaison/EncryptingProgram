@@ -7,7 +7,13 @@
         mc:Ignorable="d"
         Title="MainWindow" Height="450" Width="800">
     <Grid>
-        <TextBox x:Name="UserConsole" HorizontalAlignment="Left" Height="409" Margin="10,10,0,0" TextWrapping="Wrap" VerticalAlignment="Top" Width="370"/>
+        <TextBox x:Name="UserConsole" HorizontalAlignment="Left" Height="419" TextWrapping="Wrap" VerticalAlignment="Top" Width="380" Focusable="False"/>
+        <ProgressBar x:Name="FileSizePB" HorizontalAlignment="Left" Height="18" Margin="380,401,0,0" VerticalAlignment="Top" Width="412"/>
+        <RadioButton x:Name="User1" Content="User1" HorizontalAlignment="Left" Margin="404,21,0,0" VerticalAlignment="Top" RenderTransformOrigin="-0.135,0.198" Checked="User1_Checked"/>
+        <RadioButton x:Name="User2" Content="User2" HorizontalAlignment="Left" Margin="503,21,0,0" VerticalAlignment="Top" RenderTransformOrigin="-0.135,0.198" Checked="User2_Checked"/>
+        <RadioButton x:Name="User3" Content="User3" HorizontalAlignment="Left" Margin="607,21,0,0" VerticalAlignment="Top" RenderTransformOrigin="-0.135,0.198" Checked="User3_Checked"/>
+        <PasswordBox x:Name="password" HorizontalAlignment="Left" Margin="404,67,0,0" VerticalAlignment="Top" Width="245"/>
+        <Button x:Name="Login" Content="Login" HorizontalAlignment="Left" Margin="677,65,0,0" VerticalAlignment="Top" Width="75" Click="Login_Click"/>
 
     </Grid>
 </Window>

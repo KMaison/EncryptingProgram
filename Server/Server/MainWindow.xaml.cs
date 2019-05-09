@@ -18,20 +18,74 @@ using System.Net;
 using System.Security.Cryptography;
 using System.Threading;
 using Client;
+using System.Threading.Tasks;
 
 namespace Client
 {
     /// <summary>
     /// Interaction logic for MainWindow.xaml
     /// </summary>
+    /// 
+
     public partial class MainWindow : Window
     {
+        public CipherMode aesType = CipherMode.ECB;
+        private TcpClient client;
+        Dictionary<int, string> Clients =
+            new Dictionary<int, string>();
+
+
         public MainWindow()
         {
             InitializeComponent();
+            Task.Factory.StartNew(() => MainFunction());
         }
 
-		private void Button_Click(object sender, RoutedEventArgs e)
+        private void MainFunction()
+        {
+            TcpListener Listener = null;
+            NetworkStream netstream = null;
+
+
+            try
+            {
+                Listener = new TcpListener(IPAddress.Any, 5001);
+                Listener.Start();
+            }
+            catch (Exception ex)
+            {
+                return;
+            }
+
+            for (; ; )
+            {
+                try
+                {
+                    if (Listener.Pending())
+                    {
+                        client = Listener.AcceptTcpClient();
+                        netstream = client.GetStream();
+                        byte[] buffer = new byte[client.ReceiveBufferSize];
+                        // read file name
+                        int bytesRead = netstream.Read(buffer, 0, client.ReceiveBufferSize);
+                        //---convert the data received into a string---
+                        string pubKey = Encoding.ASCII.GetString(buffer, 0, bytesRead);
+                        netstream.Write(ASCIIEncoding.ASCII.GetBytes("O"), 0, ASCIIEncoding.ASCII.GetBytes("O").Length);
+
+                        bytesRead = netstream.Read(buffer, 0, client.ReceiveBufferSize);
+                        int userID = BitConverter.ToInt32(buffer, 0);
+                        netstream.Write(ASCIIEncoding.ASCII.GetBytes("O"), 0, ASCIIEncoding.ASCII.GetBytes("O").Length);
+
+                        Clients.Add(userID, pubKey);
+                    }
+                }
+                catch (Exception ex)
+                {
+                }
+            }
+        }
+
+        private void Button_Click(object sender, RoutedEventArgs e)
         {
             Microsoft.Win32.OpenFileDialog dlg = new Microsoft.Win32.OpenFileDialog();
 
@@ -45,10 +99,6 @@ namespace Client
                 string filename = dlg.FileName;
                 selectedFileTextBox.Text = filename;
             }
-
-            //var abc = "witam serdecznie";
-            //System.Windows.MessageBox.Show(abc, "Aes");
-            //System.Windows.MessageBox.Show(Encrypt(abc, "haslo"), "Aes");
         }
 
         private void Button_Click_1(object sender, RoutedEventArgs e)
@@ -59,7 +109,8 @@ namespace Client
             NetworkStream netstream = null;
             try
             {
-                while (tries++ < 100) {
+                while (tries++ < 100)
+                {
                     try
                     {
                         client = new TcpClient("127.0.0.1", 5000);
@@ -69,13 +120,21 @@ namespace Client
                     catch (Exception e1) { }
                 }
 
-                // Wysyłanie nazwy
+                // Wysyłanie nazwy pliku
                 string extension = System.IO.Path.GetExtension(selectedFileTextBox.Text);
-                byte[] bytesToSend = ASCIIEncoding.ASCII.GetBytes(filenameTextBox.Text+extension);
+                byte[] bytesToSend = ASCIIEncoding.ASCII.GetBytes(filenameTextBox.Text + extension);
                 netstream.Write(bytesToSend, 0, bytesToSend.Length);
                 // Potwierdzenie
                 while (netstream.ReadByte() != 'O') { };
-                
+
+                // Odbieranie UserID
+                byte[] buffer = new byte[client.ReceiveBufferSize];
+                var bytesRead = netstream.Read(buffer, 0, client.ReceiveBufferSize);
+                int userID = BitConverter.ToInt32(buffer, 0);
+                netstream.Write(ASCIIEncoding.ASCII.GetBytes("O"), 0, ASCIIEncoding.ASCII.GetBytes("O").Length);
+
+
+
                 FileStream Fs = new FileStream(selectedFileTextBox.Text, FileMode.Open, FileAccess.Read);
                 int CurrentPacketLength;
 
@@ -84,9 +143,28 @@ namespace Client
                 // Inicjalizacja enkryptora
                 byte[] genKey, genIV;
                 var encryptor = new Encryption();
-                encryptor.Initialize(out genKey, out genIV);
+                encryptor.Initialize(out genKey, out genIV, aesType);
 
-                netstream.Write(genKey, 0, genKey.Length);
+                // Wysłanie CipherMode
+                bytesToSend = ASCIIEncoding.ASCII.GetBytes(aesType.ToString());
+                netstream.Write(bytesToSend, 0, bytesToSend.Length);
+                // Potwierdzenie
+                while (netstream.ReadByte() != 'O') { };
+
+                // Odczytanie klucza publicznego ze słownika Clients
+                string pubKeyString = Clients[userID];
+                var csp = new RSACryptoServiceProvider();
+
+                var sr = new System.IO.StringReader(pubKeyString);
+                var xs = new System.Xml.Serialization.XmlSerializer(typeof(RSAParameters));
+                var pubKey = (RSAParameters)xs.Deserialize(sr);
+                csp.ImportParameters(pubKey);
+
+                //Zaszyfrowanie klucza sesyjnego kluczem publicznym
+                var bytesCypherText = csp.Encrypt(genKey, false);
+
+                //Wysłanie zaszyfrowanego klucza publicznego
+                netstream.Write(bytesCypherText, 0, bytesCypherText.Length);
                 // Potwierdzenie odbioru Key
                 while (netstream.ReadByte() != 'O') { };
 
@@ -101,7 +179,12 @@ namespace Client
 
                 int TotalLength = encyptedData.Length;
                 int NoOfPackets = Convert.ToInt32(Math.Ceiling(Convert.ToDouble(encyptedData.Length) / Convert.ToDouble(BufferSize)));
-                //progressBar.Maximum = NoOfPackets;
+
+                var encryptedDataSize = BitConverter.GetBytes(TotalLength);
+                netstream.Write(encryptedDataSize, 0, encryptedDataSize.Length);
+                // Potwierdzenie odbioru wielkości pliku
+                while (netstream.ReadByte() != 'O') { };
+
 
                 for (int i = 0; i < NoOfPackets; i++)
                 {
@@ -116,11 +199,6 @@ namespace Client
                     TotalLength = TotalLength - CurrentPacketLength;
 
                     netstream.Write(SendingBuffer, 0, (int)SendingBuffer.Length);
-
-                    //if (progressBar.Value >= progressBar.Maximum)
-                    //    progressBar.Value = progressBar.Minimum;
-                    //progressBar.Value++;
-                    //progressBar.UpdateLayout();
                 }
                 netstream.Flush();
                 while (netstream.ReadByte() != 'O') { }
@@ -138,10 +216,24 @@ namespace Client
             }
         }
 
-
-        private void RadioButton_Checked(object sender, RoutedEventArgs e)
+        private void ecbRB_Checked(object sender, RoutedEventArgs e)
         {
+            aesType = CipherMode.ECB;
+        }
 
+        private void cbcRB_Checked(object sender, RoutedEventArgs e)
+        {
+            aesType = CipherMode.CBC;
+        }
+
+        private void cfbRB_Checked(object sender, RoutedEventArgs e)
+        {
+            aesType = CipherMode.CFB;
+        }
+
+        private void ofbRB_Checked(object sender, RoutedEventArgs e)
+        {
+            aesType = CipherMode.OFB;
         }
     }
 }
