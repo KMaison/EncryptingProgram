@@ -30,6 +30,7 @@ namespace Client
         bool czyZalogowano = false;
         int IdUser;
         RSAParameters privKey, pubKey;
+        string privKeyString;
         public MainWindow()
         {
             InitializeComponent();
@@ -58,7 +59,7 @@ namespace Client
                 pubKeyString = sw.ToString();
             }
 
-            string privKeyString;
+           
             {
                 var sw = new System.IO.StringWriter();
                 var xs = new System.Xml.Serialization.XmlSerializer(typeof(RSAParameters));
@@ -75,8 +76,8 @@ namespace Client
             byte[] encryptedKey = encryptPrivKey.Encrypt(ASCIIEncoding.ASCII.GetBytes(privKeyString));
 
             //Zapisanie kluczy asymetrycznych
-            File.WriteAllText("./Keys/PrivateKeys/" + IdUser, Encoding.ASCII.GetString(encryptedKey, 0, encryptedKey.Length));
-            File.WriteAllText("./Keys/PublicKeys/" + IdUser, pubKeyString);
+            File.WriteAllText("../../../../Keys/PrivateKeys/" + IdUser, Encoding.ASCII.GetString(encryptedKey, 0, 32));//encryptedKey.Length
+            File.WriteAllText("../../../../Keys/PublicKeys/" + IdUser, pubKeyString);
 
             //Próba połącznia z serwerem
             int tries = 0;
@@ -242,7 +243,11 @@ namespace Client
                 netstream.Write(ASCIIEncoding.ASCII.GetBytes("O"), 0, ASCIIEncoding.ASCII.GetBytes("O").Length);
 
                 // Dekrypcja
-                var decryptedData = Decryption.Decrypt(msEncrypted.ToArray(), Key, IV, aesType);
+                StreamReader srr = new StreamReader("../../../../Keys/PrivateKeys/" + IdUser); //~klucze prywatne są miedzy apkami bo to bardzo bezpieczne...
+                string privKeyString = srr.ReadToEnd();
+                byte[] privKey = Encoding.ASCII.GetBytes(privKeyString);
+
+                var decryptedData = Decryption.Decrypt(msEncrypted.ToArray(), privKey, IV, aesType); //odszyfrowuje prywatnym
 
                 Fs.Write(decryptedData, 0, decryptedData.Length);
                 Fs.Flush();

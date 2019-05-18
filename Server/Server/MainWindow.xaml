@@ -10,10 +10,10 @@
         <Button x:Name="fileSelectButton" Content="Select file" HorizontalAlignment="Left" Margin="195,48,0,0" VerticalAlignment="Top" Width="76" Click="Button_Click" RenderTransformOrigin="0.772,0.883"/>
         <TextBox x:Name="selectedFileTextBox" HorizontalAlignment="Left" Height="24" Margin="0,7,0,0" TextWrapping="Wrap" VerticalAlignment="Top" Width="477"/>
         <Button x:Name="sendButton" Content="Send" HorizontalAlignment="Left" Margin="359,177,0,0" VerticalAlignment="Top" Width="75" Click="Button_Click_1"/>
-        <RadioButton x:Name="ecbRB" Content="ECB" HorizontalAlignment="Left" Margin="25,80,0,0" VerticalAlignment="Top" IsChecked="True" Checked="ecbRB_Checked"/>
-        <RadioButton x:Name="cbcRB" Content="CBC" HorizontalAlignment="Left" Margin="25,100,0,0" VerticalAlignment="Top" Checked="cbcRB_Checked"/>
-        <RadioButton x:Name="cfbRB" Content="CFB" HorizontalAlignment="Left" Margin="25,120,0,0" VerticalAlignment="Top" Checked="cfbRB_Checked"/>
-        <RadioButton x:Name="ofbRB" Content="OFB" HorizontalAlignment="Left" Margin="25,140,0,0" VerticalAlignment="Top" Checked="ofbRB_Checked" IsEnabled="False"/>
+        <RadioButton x:Name="ecbRB" Content="ECB" HorizontalAlignment="Left" Margin="25,80,0,0" VerticalAlignment="Top" IsChecked="True" Checked="ecbRB_Checked" GroupName="encryption"/>
+        <RadioButton x:Name="cbcRB" Content="CBC" HorizontalAlignment="Left" Margin="25,100,0,0" VerticalAlignment="Top" Checked="cbcRB_Checked" GroupName="encryption"/>
+        <RadioButton x:Name="cfbRB" Content="CFB" HorizontalAlignment="Left" Margin="25,120,0,0" VerticalAlignment="Top" Checked="cfbRB_Checked" GroupName="encryption"/>
+        <RadioButton x:Name="ofbRB" Content="OFB" HorizontalAlignment="Left" Margin="25,140,0,0" VerticalAlignment="Top" Checked="ofbRB_Checked" IsEnabled="False" GroupName="encryption"/>
         <Label Content="Encryption type:" HorizontalAlignment="Left" Margin="11,48,0,0" VerticalAlignment="Top" RenderTransformOrigin="0.462,0.577">
             <Label.RenderTransform>
                 <TransformGroup>
@@ -25,6 +25,9 @@
             </Label.RenderTransform>
         </Label>
         <TextBox x:Name="filenameTextBox" HorizontalAlignment="Left" Height="23" Margin="319,48,0,0" TextWrapping="Wrap" VerticalAlignment="Top" Width="148" AutomationProperties.HelpText="lala" Text="Output file name"/>
+        <RadioButton x:Name="User3" Content="User3" HorizontalAlignment="Left" Margin="359,140,0,0" VerticalAlignment="Top" GroupName="user" Checked="User3_Checked"/>
+        <RadioButton x:Name="User2" Content="User2" HorizontalAlignment="Left" Margin="359,120,0,0" VerticalAlignment="Top" GroupName="user" Checked="User2_Checked"/>
+        <RadioButton x:Name="User1" Content="User1" HorizontalAlignment="Left" Margin="359,100,0,0" VerticalAlignment="Top" IsChecked="True" GroupName="user" Checked="User1_Checked"/>
 
     </Grid>
 </Window>

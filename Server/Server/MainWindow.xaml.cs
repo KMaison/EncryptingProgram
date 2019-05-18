@@ -30,6 +30,7 @@ namespace Client
     public partial class MainWindow : Window
     {
         public CipherMode aesType = CipherMode.ECB;
+        public int clientID;
         private TcpClient client;
         Dictionary<int, string> Clients =
             new Dictionary<int, string>();
@@ -127,7 +128,7 @@ namespace Client
                 // Potwierdzenie
                 while (netstream.ReadByte() != 'O') { };
 
-                // Odbieranie UserID
+                // Odbieranie UserID //~pozbyc sie tego
                 byte[] buffer = new byte[client.ReceiveBufferSize];
                 var bytesRead = netstream.Read(buffer, 0, client.ReceiveBufferSize);
                 int userID = BitConverter.ToInt32(buffer, 0);
@@ -143,7 +144,11 @@ namespace Client
                 // Inicjalizacja enkryptora
                 byte[] genKey, genIV;
                 var encryptor = new Encryption();
-                encryptor.Initialize(out genKey, out genIV, aesType);
+                StreamReader srr= new StreamReader("../../../../Keys/PrivateKeys/" + clientID); //~klucze prywatne są miedzy apkami bo to bardzo bezpieczne...
+                string privKeyString  = srr.ReadToEnd();
+                byte[] privKey = Encoding.ASCII.GetBytes(privKeyString);
+
+                encryptor.Initialize(out genKey, out genIV, aesType,privKey); //Przekazuje klucz prywatny 
 
                 // Wysłanie CipherMode
                 bytesToSend = ASCIIEncoding.ASCII.GetBytes(aesType.ToString());
@@ -234,6 +239,21 @@ namespace Client
         private void ofbRB_Checked(object sender, RoutedEventArgs e)
         {
             aesType = CipherMode.OFB;
+        }
+
+        private void User1_Checked(object sender, RoutedEventArgs e)
+        {
+            clientID = 1;
+        }
+
+        private void User2_Checked(object sender, RoutedEventArgs e)
+        {
+            clientID = 2;
+        }
+
+        private void User3_Checked(object sender, RoutedEventArgs e)
+        {
+            clientID = 3;
         }
     }
 }
