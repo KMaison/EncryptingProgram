@@ -74,9 +74,9 @@ namespace Client
 
             //Zaszyfriwanie klucza prywatnego z AES
             byte[] encryptedKey = encryptPrivKey.Encrypt(ASCIIEncoding.ASCII.GetBytes(privKeyString));
-
+          //  byte[] publKeyB = encryptPrivKey.Encrypt(ASCIIEncoding.ASCII.GetBytes(pubKeyString));
             //Zapisanie kluczy asymetrycznych
-            File.WriteAllText("../../../../Keys/PrivateKeys/" + IdUser, Encoding.ASCII.GetString(encryptedKey, 0, 32));//encryptedKey.Length
+            File.WriteAllText("./Keys/PrivateKeys/" + IdUser, Encoding.ASCII.GetString(encryptedKey));//encryptedKey.Length
             File.WriteAllText("../../../../Keys/PublicKeys/" + IdUser, pubKeyString);
 
             //Próba połącznia z serwerem
@@ -242,11 +242,15 @@ namespace Client
                 // Wysłanie potwierdzenia odbioru
                 netstream.Write(ASCIIEncoding.ASCII.GetBytes("O"), 0, ASCIIEncoding.ASCII.GetBytes("O").Length);
 
+
+
                 // Dekrypcja
-                StreamReader srr = new StreamReader("../../../../Keys/PrivateKeys/" + IdUser); //~klucze prywatne są miedzy apkami bo to bardzo bezpieczne...
+                StreamReader srr = new StreamReader(".Keys/PrivateKeys/" + IdUser); //~klucze prywatne są miedzy apkami bo to bardzo bezpieczne...
                 string privKeyString = srr.ReadToEnd();
                 byte[] privKey = Encoding.ASCII.GetBytes(privKeyString);
 
+
+                
                 var decryptedData = Decryption.Decrypt(msEncrypted.ToArray(), privKey, IV, aesType); //odszyfrowuje prywatnym
 
                 Fs.Write(decryptedData, 0, decryptedData.Length);

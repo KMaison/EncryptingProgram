@@ -144,11 +144,12 @@ namespace Client
                 // Inicjalizacja enkryptora
                 byte[] genKey, genIV;
                 var encryptor = new Encryption();
-                StreamReader srr= new StreamReader("../../../../Keys/PrivateKeys/" + clientID); //~klucze prywatne są miedzy apkami bo to bardzo bezpieczne...
-                string privKeyString  = srr.ReadToEnd();
-                byte[] privKey = Encoding.ASCII.GetBytes(privKeyString);
+                StreamReader srr= new StreamReader("../../../../Keys/PublicKeys/" + clientID); //~klucze prywatne są miedzy apkami bo to bardzo bezpieczne...
+                string pubKeyString  = srr.ReadToEnd();
 
-                encryptor.Initialize(out genKey, out genIV, aesType,privKey); //Przekazuje klucz prywatny 
+                byte[] pubKey = Encoding.ASCII.GetBytes(pubKeyString);
+
+                encryptor.Initialize(out genKey, out genIV, aesType, pubKey); //Przekazuje klucz prywatny 
 
                 // Wysłanie CipherMode
                 bytesToSend = ASCIIEncoding.ASCII.GetBytes(aesType.ToString());
@@ -157,13 +158,15 @@ namespace Client
                 while (netstream.ReadByte() != 'O') { };
 
                 // Odczytanie klucza publicznego ze słownika Clients
-                string pubKeyString = Clients[userID];
+
+                //string pubKeyString = Clients[clientID];
                 var csp = new RSACryptoServiceProvider();
 
                 var sr = new System.IO.StringReader(pubKeyString);
                 var xs = new System.Xml.Serialization.XmlSerializer(typeof(RSAParameters));
-                var pubKey = (RSAParameters)xs.Deserialize(sr);
-                csp.ImportParameters(pubKey);
+                var pubKeyD = (RSAParameters)xs.Deserialize(sr);
+
+                csp.ImportParameters(pubKeyD);
 
                 //Zaszyfrowanie klucza sesyjnego kluczem publicznym
                 var bytesCypherText = csp.Encrypt(genKey, false);
