@@ -9,8 +9,8 @@ namespace Client
 {
     class Encryption
     {
-        byte[] IV;
-        byte[] Key;
+        public byte[] IV;
+        public byte[] Key;
         Aes aesAlg;
         ICryptoTransform encryptor;
 
@@ -20,13 +20,25 @@ namespace Client
 
             Key = GetKey();
             aesAlg.Key = Key;
-            aesAlg.Padding = PaddingMode.PKCS7;
+            aesAlg.Padding = PaddingMode.Zeros;
             aesAlg.Mode = CipherMode.CBC;
             aesAlg.GenerateIV();
             IV = aesAlg.IV;
 
             genKey = Key;
             genIV = IV;
+
+            encryptor = aesAlg.CreateEncryptor(aesAlg.Key, aesAlg.IV);
+        }
+
+        public void Initialize(byte[] ParKey, byte[] ParIV)
+        {
+            aesAlg = Aes.Create();
+
+            aesAlg.Key = ParKey;
+            aesAlg.Padding = PaddingMode.Zeros;
+            aesAlg.Mode = CipherMode.CBC;
+            aesAlg.IV = ParIV;
 
             encryptor = aesAlg.CreateEncryptor(aesAlg.Key, aesAlg.IV);
         }

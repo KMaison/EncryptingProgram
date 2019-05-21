@@ -29,6 +29,7 @@ namespace Client
     {
         bool czyZalogowano = false;
         int IdUser;
+        string userPass;
         RSAParameters privKey, pubKey;
         string privKeyString;
         public MainWindow()
@@ -50,7 +51,7 @@ namespace Client
 
             privKey = csp.ExportParameters(true);
             pubKey = csp.ExportParameters(false);
-
+            
             string pubKeyString;
             {
                 var sw = new System.IO.StringWriter();
@@ -68,16 +69,24 @@ namespace Client
             }
 
             Encryption encryptPrivKey = new Encryption();
-            byte[] IV;
-            byte[] Key;
-            encryptPrivKey.Initialize(out Key, out IV);
+            byte[] newKey = new byte[32];
+            byte[] tmpIV = new byte[16];
+            byte[] hash;
+
+            SHA1 sha = new SHA1CryptoServiceProvider();
+            hash = sha.ComputeHash(ASCIIEncoding.ASCII.GetBytes("user" + IdUser));
+            Array.Copy(hash, newKey, hash.Length>32 ? 32 : hash.Length);
+
+            encryptPrivKey.Initialize(newKey, tmpIV);
+
 
             //Zaszyfriwanie klucza prywatnego z AES
             byte[] encryptedKey = encryptPrivKey.Encrypt(ASCIIEncoding.ASCII.GetBytes(privKeyString));
-          //  byte[] publKeyB = encryptPrivKey.Encrypt(ASCIIEncoding.ASCII.GetBytes(pubKeyString));
+
             //Zapisanie kluczy asymetrycznych
-            File.WriteAllText("./Keys/PrivateKeys/" + IdUser, Encoding.ASCII.GetString(encryptedKey));//encryptedKey.Length
-            File.WriteAllText("../../../../Keys/PublicKeys/" + IdUser, pubKeyString);
+            File.WriteAllBytes("./Keys/PrivateKeys/" + IdUser, encryptedKey);
+            File.WriteAllBytes("../../../../Keys/PublicKeys/" + IdUser, ASCIIEncoding.ASCII.GetBytes(pubKeyString));
+
 
             //Próba połącznia z serwerem
             int tries = 0;
@@ -93,18 +102,11 @@ namespace Client
                 catch (Exception e1) { }
             }
 
-            // Wysylanie publicKey
-            netstream = client.GetStream();
-            byte[] bytesToSend = ASCIIEncoding.ASCII.GetBytes(pubKeyString);
-            netstream.Write(bytesToSend, 0, bytesToSend.Length);
-            // Potwierdzenie
-            while (netstream.ReadByte() != 'O') { };
-
-            // Wysyłannie IdUser
-            bytesToSend = BitConverter.GetBytes(IdUser);
-            netstream.Write(bytesToSend, 0, bytesToSend.Length);
-            // Potwierdzenie
-            while (netstream.ReadByte() != 'O') { };
+            //// Wysyłannie IdUser
+            //byte[] bytesToSend = BitConverter.GetBytes(IdUser);
+            //netstream.Write(bytesToSend, 0, bytesToSend.Length);
+            //// Potwierdzenie
+            //while (netstream.ReadByte() != 'O') { };
 
             try
             {
@@ -147,8 +149,8 @@ namespace Client
             this.Dispatcher.Invoke(() => UserConsole.Text += "Incoming File\n");
 
             netstream = client.GetStream();
-            byte[] buffer = new byte[client.ReceiveBufferSize];
 
+            byte[] buffer = new byte[client.ReceiveBufferSize];
             // read file name
             int bytesRead = netstream.Read(buffer, 0, client.ReceiveBufferSize);
             //---convert the data received into a string---
@@ -156,11 +158,20 @@ namespace Client
             this.Dispatcher.Invoke(() => UserConsole.Text += "File name: " + SaveFileName + "\n");
             netstream.Write(ASCIIEncoding.ASCII.GetBytes("O"), 0, ASCIIEncoding.ASCII.GetBytes("O").Length);
 
-            // send UserID
-            var bytesToSend = BitConverter.GetBytes(IdUser);
-            netstream.Write(bytesToSend, 0, bytesToSend.Length);
-            // Potwierdzenie
-            while (netstream.ReadByte() != 'O') { };
+            // Odbieranie UserID
+            buffer = new byte[client.ReceiveBufferSize];
+            bytesRead = netstream.Read(buffer, 0, client.ReceiveBufferSize);
+            int userID = BitConverter.ToInt32(buffer, 0);
+
+            if (userID != IdUser)
+            {
+                netstream.Write(ASCIIEncoding.ASCII.GetBytes("N"), 0, ASCIIEncoding.ASCII.GetBytes("N").Length);
+                return 0; // nie do mnie
+            }
+            else
+                netstream.Write(ASCIIEncoding.ASCII.GetBytes("O"), 0, ASCIIEncoding.ASCII.GetBytes("O").Length);
+
+
 
             // read CipherMode
             bytesRead = netstream.Read(buffer, 0, client.ReceiveBufferSize);
@@ -179,18 +190,39 @@ namespace Client
             netstream.Write(ASCIIEncoding.ASCII.GetBytes("O"), 0, ASCIIEncoding.ASCII.GetBytes("O").Length);
 
             // read AES Key
-            //buffer = new byte[client.ReceiveBufferSize];
+            buffer = new byte[client.ReceiveBufferSize];
             bytesRead = netstream.Read(buffer, 0, client.ReceiveBufferSize);
-            //Key = new byte[bytesRead];
-            //we want to decrypt, therefore we need a csp and load our private key
+
+
+            byte[] bytesKey = File.ReadAllBytes("./Keys/PrivateKeys/" + IdUser);
+
+            Decryption encryptPrivKey = new Decryption();
+
+            byte[] shaKey = new byte[32];
+            byte[] tmpIV = new byte[16];
+            byte[] hash;
+
+            SHA1 sha = new SHA1CryptoServiceProvider();
+            hash = sha.ComputeHash(ASCIIEncoding.ASCII.GetBytes(userPass));
+            Array.Copy(hash, shaKey, hash.Length > 32 ? 32 : hash.Length);
+
+            byte[] decryptedKey = Decryption.Decrypt(bytesKey, shaKey, tmpIV, CipherMode.CBC);
+
+            // Odczytanie klucza publicznego ze stringa
+            string keyString = Encoding.ASCII.GetString(decryptedKey, 0, decryptedKey.Length);
+            var sr = new System.IO.StringReader(keyString);
+            var xs = new System.Xml.Serialization.XmlSerializer(typeof(RSAParameters));
+            var prvKeyD = (RSAParameters)xs.Deserialize(sr);
+
+
             var csp = new RSACryptoServiceProvider();
-            csp.ImportParameters(privKey);
+            csp.ImportParameters(prvKeyD);
             //decrypt and strip pkcs#1.5 padding
             Key = csp.Decrypt(buffer.Take(256).ToArray<byte>(), false);
 
-            //Array.Copy(buffer, Key, bytesRead);
             this.Dispatcher.Invoke(() => UserConsole.Text += "Key: " + BitConverter.ToString(buffer.Take(32).ToArray()) + "\n");
             netstream.Write(ASCIIEncoding.ASCII.GetBytes("O"), 0, ASCIIEncoding.ASCII.GetBytes("O").Length);
+
 
             // read AES IV
             bytesRead = netstream.Read(buffer, 0, client.ReceiveBufferSize);
@@ -244,14 +276,14 @@ namespace Client
 
 
 
-                // Dekrypcja
-                StreamReader srr = new StreamReader(".Keys/PrivateKeys/" + IdUser); //~klucze prywatne są miedzy apkami bo to bardzo bezpieczne...
-                string privKeyString = srr.ReadToEnd();
-                byte[] privKey = Encoding.ASCII.GetBytes(privKeyString);
+                //// Dekrypcja
+                //StreamReader srr = new StreamReader(".Keys/PrivateKeys/" + IdUser); //~klucze prywatne są miedzy apkami bo to bardzo bezpieczne...
+                //string privKeyString = srr.ReadToEnd();
+                //byte[] privKey = Encoding.ASCII.GetBytes(privKeyString);
 
 
                 
-                var decryptedData = Decryption.Decrypt(msEncrypted.ToArray(), privKey, IV, aesType); //odszyfrowuje prywatnym
+                var decryptedData = Decryption.Decrypt(msEncrypted.ToArray(), Key, IV, aesType); //odszyfrowuje prywatnym
 
                 Fs.Write(decryptedData, 0, decryptedData.Length);
                 Fs.Flush();
@@ -266,31 +298,9 @@ namespace Client
 
         private void Login_Click(object sender, RoutedEventArgs e)
         {
-            switch (IdUser)
-            {
-                case 1:
-                    if (password.Password.Equals("user1"))
-                    {
-                        czyZalogowano = true;
-                        Login.IsEnabled = false;
-                    }
-                    break;
-                case 2:
-                    if (password.Password.Equals("user2"))
-                    {
-                        czyZalogowano = true;
-                        Login.IsEnabled = false;
-                    }
-                    break;
-                case 3:
-                    if (password.Password.Equals("user3"))
-                    {
-                        czyZalogowano = true;
-                        Login.IsEnabled = false;
-                    }
-                    break;
-            }
-
+            userPass = password.Password;
+            czyZalogowano = true;
+            Login.IsEnabled = false;
         }
 
         private void User1_Checked(object sender, RoutedEventArgs e)

@@ -20,7 +20,7 @@ namespace Client
                     aesAlg.Key = key;
                     aesAlg.IV = iv;
                     aesAlg.Mode = aesType;
-                    aesAlg.Padding = PaddingMode.PKCS7;
+                    aesAlg.Padding = PaddingMode.Zeros;
 
                     ICryptoTransform decryptor = aesAlg.CreateDecryptor(aesAlg.Key, aesAlg.IV);
 

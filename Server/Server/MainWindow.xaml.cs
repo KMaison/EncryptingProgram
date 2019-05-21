@@ -66,18 +66,19 @@ namespace Client
                     {
                         client = Listener.AcceptTcpClient();
                         netstream = client.GetStream();
-                        byte[] buffer = new byte[client.ReceiveBufferSize];
-                        // read file name
-                        int bytesRead = netstream.Read(buffer, 0, client.ReceiveBufferSize);
-                        //---convert the data received into a string---
-                        string pubKey = Encoding.ASCII.GetString(buffer, 0, bytesRead);
-                        netstream.Write(ASCIIEncoding.ASCII.GetBytes("O"), 0, ASCIIEncoding.ASCII.GetBytes("O").Length);
+                        //byte[] buffer = new byte[client.ReceiveBufferSize];
+                        //// read file name
+                        //int bytesRead = netstream.Read(buffer, 0, client.ReceiveBufferSize);
 
-                        bytesRead = netstream.Read(buffer, 0, client.ReceiveBufferSize);
-                        int userID = BitConverter.ToInt32(buffer, 0);
-                        netstream.Write(ASCIIEncoding.ASCII.GetBytes("O"), 0, ASCIIEncoding.ASCII.GetBytes("O").Length);
+                        //string pubKey = Encoding.ASCII.GetString(buffer, 0, bytesRead);
+                        //netstream.Write(ASCIIEncoding.ASCII.GetBytes("O"), 0, ASCIIEncoding.ASCII.GetBytes("O").Length);
 
-                        Clients.Add(userID, pubKey);
+                        //// Read userID
+                        //bytesRead = netstream.Read(buffer, 0, client.ReceiveBufferSize);
+                        //int userID = BitConverter.ToInt32(buffer, 0);
+                        //netstream.Write(ASCIIEncoding.ASCII.GetBytes("O"), 0, ASCIIEncoding.ASCII.GetBytes("O").Length);
+
+                        //Clients.Add(userID, pubKey);
                     }
                 }
                 catch (Exception ex)
@@ -128,12 +129,12 @@ namespace Client
                 // Potwierdzenie
                 while (netstream.ReadByte() != 'O') { };
 
-                // Odbieranie UserID //~pozbyc sie tego
-                byte[] buffer = new byte[client.ReceiveBufferSize];
-                var bytesRead = netstream.Read(buffer, 0, client.ReceiveBufferSize);
-                int userID = BitConverter.ToInt32(buffer, 0);
-                netstream.Write(ASCIIEncoding.ASCII.GetBytes("O"), 0, ASCIIEncoding.ASCII.GetBytes("O").Length);
-
+             
+                // send UserID
+                bytesToSend = BitConverter.GetBytes(clientID);
+                netstream.Write(bytesToSend, 0, bytesToSend.Length);
+                // Potwierdzenie
+                if (netstream.ReadByte() != 'O') { return; };
 
 
                 FileStream Fs = new FileStream(selectedFileTextBox.Text, FileMode.Open, FileAccess.Read);
@@ -144,12 +145,13 @@ namespace Client
                 // Inicjalizacja enkryptora
                 byte[] genKey, genIV;
                 var encryptor = new Encryption();
-                StreamReader srr= new StreamReader("../../../../Keys/PublicKeys/" + clientID); //~klucze prywatne są miedzy apkami bo to bardzo bezpieczne...
-                string pubKeyString  = srr.ReadToEnd();
+                encryptor.Initialize(out genKey, out genIV, aesType);
 
-                byte[] pubKey = Encoding.ASCII.GetBytes(pubKeyString);
+                // Odczytanie klucza publicznego
+                byte[] keyArray = File.ReadAllBytes("../../../../Keys/PublicKeys/" + clientID);
+                string pubKeyString = ASCIIEncoding.ASCII.GetString(keyArray);
+                //byte[] pubKey = Encoding.ASCII.GetBytes(pubKeyString);
 
-                encryptor.Initialize(out genKey, out genIV, aesType, pubKey); //Przekazuje klucz prywatny 
 
                 // Wysłanie CipherMode
                 bytesToSend = ASCIIEncoding.ASCII.GetBytes(aesType.ToString());
@@ -157,9 +159,8 @@ namespace Client
                 // Potwierdzenie
                 while (netstream.ReadByte() != 'O') { };
 
-                // Odczytanie klucza publicznego ze słownika Clients
 
-                //string pubKeyString = Clients[clientID];
+                // Odczytanie klucza publicznego ze stringa
                 var csp = new RSACryptoServiceProvider();
 
                 var sr = new System.IO.StringReader(pubKeyString);
